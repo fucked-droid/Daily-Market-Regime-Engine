@@ -1,1 +1,0 @@
-# Daily-Market-Regime-Engine
