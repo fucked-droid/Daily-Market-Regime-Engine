@@ -4,6 +4,9 @@ import subprocess
 import pandas as pd
 import numpy as np
 
+from .volatility import add_volatility_layer
+
+
 
 # ============================================================
 # CONFIGURATION
@@ -277,7 +280,7 @@ def add_participation_layer(
 
 def build_core_engine(df):
     """
-    Rebuild the four core layers from OHLCV data.
+    Rebuild the core market-analysis layers from OHLCV data.
     """
 
     df = df.copy()
@@ -286,8 +289,10 @@ def build_core_engine(df):
     df = add_momentum_layer(df)
     df = add_structure_layer(df)
     df = add_participation_layer(df)
+    df = add_volatility_layer(df)
 
     return df
+
 
 
 # ============================================================
