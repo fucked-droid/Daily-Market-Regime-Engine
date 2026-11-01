@@ -1,0 +1,16 @@
+{
+  "created_by": "trader-scanner",
+  "created_at": "2026-10-29T16:36:55Z",
+  "mode": "daily",
+  "as_of": "2026-10-28 close",
+  "universe": 1,
+  "scanned": 1,
+  "failed": 0,
+  "source": "yahoo",
+  "filters": {
+    "min_price": 5.0,
+    "min_volume": 0
+  },
+  "note": "A scan is a list of charts that match a rule, not a list of stocks to buy.",
+  "hits": []
+}

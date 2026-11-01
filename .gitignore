@@ -1,8 +1,55 @@
+# ==============================================================================
+# Git Ignore Configuration
+# Protects sensitive credentials, keys, cache, system files, and large binaries
+# ==============================================================================
+
+# --- Secrets, Credentials & Keys ---
+.env
+.env.*
+*.key
+*.pem
+*.token
+*.secret
+*credentials*
+*id_rsa*
+*id_ed25519*
+.ssh/
+
+# --- Shell Configuration & History (contains API keys and terminal history) ---
+.bashrc
+.bash_history
+.bash_profile
+.bash_logout
+.profile
+.gitconfig
+.wget-hsts
+.termux/
+
+# --- Antigravity CLI, Claude & IDE Internal State/Logs/Caches ---
+.gemini/
+.claude/
+.cache/
+.config/
+.local/
+
+# --- Python compilation artifacts & Virtual Environments ---
 .venv/
+.ipynb_checkpoints/
 __pycache__/
 *.py[cod]
-.vscode/
-.ipynb_checkpoints/
+*$py.class
+*.so
+.pytest_cache/
+
+# --- Large Binary Files & Server Distributions ---
+code-server-*/
+code-server-*.tar.gz
+*.tar.gz
+*.tar
+*.zip
+*.iso
+
+# --- System / OS / Editor Files ---
 .DS_Store
 Thumbs.db
-.claude/
+.vscode/
