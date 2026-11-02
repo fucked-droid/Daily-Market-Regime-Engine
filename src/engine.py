@@ -3,12 +3,13 @@ from pathlib import Path
 import subprocess
 import pandas as pd
 import numpy as np
+import math
 
 from .volatility import add_volatility_layer
 
 
 
-# ============================================================
+# ===========================================================
 # CONFIGURATION
 # ============================================================
 
@@ -25,8 +26,10 @@ MASTER_URL = (
     "main/data/nifty_df_master.parquet"
 )
 
+ALL_REGIMES = ["Bearish", "Bullish", "Mixed", "Strong_Bearish", "Strong_Bullish"]
 
-# ============================================================
+
+# ===========================================================
 # LOAD MASTER DATA
 # ============================================================
 
@@ -43,7 +46,7 @@ def load_nifty_master():
     return df
 
 
-# ============================================================
+# ===========================================================
 # VALIDATE MASTER DATA
 # ============================================================
 
@@ -92,7 +95,7 @@ def validate_nifty_df(df):
     return True
 
 
-# ============================================================
+# ===========================================================
 # TREND LAYER
 # ============================================================
 
@@ -144,7 +147,7 @@ def add_trend_layer(df):
     return df
 
 
-# ============================================================
+# ===========================================================
 # MOMENTUM LAYER
 # ============================================================
 
@@ -189,7 +192,7 @@ def add_momentum_layer(df):
     return df
 
 
-# ============================================================
+# ===========================================================
 # STRUCTURE LAYER
 # ============================================================
 
@@ -240,7 +243,7 @@ def add_structure_layer(
     return df
 
 
-# ============================================================
+# ===========================================================
 # PARTICIPATION LAYER
 # ============================================================
 
@@ -274,7 +277,7 @@ def add_participation_layer(
     return df
 
 
-# ============================================================
+# ===========================================================
 # APPLY CORE LAYERS
 # ============================================================
 
@@ -295,7 +298,7 @@ def build_core_engine(df):
 
 
 
-# ============================================================
+# ===========================================================
 # BACKUP
 # ============================================================
 
@@ -384,7 +387,7 @@ def backup_nifty_df(
     return True
 
 
-# ============================================================
+# ===========================================================
 # ONLINE VERIFICATION
 # ============================================================
 
@@ -411,7 +414,7 @@ def verify_online_backup():
     return online_df
 
 
-# ============================================================
+# ===========================================================
 # BREADTH LAYER
 # ============================================================
 
@@ -596,9 +599,9 @@ def add_breadth_layer(
     return nifty_df
 
 
-# ============================================================
+# ===========================================================
 # MARKET REGIME LAYER
-# ============================================================
+# ===========================================================
 
 def add_regime_layer(df):
     """
@@ -734,16 +737,16 @@ def add_regime_layer(df):
     return df
 
 
-# ============================================================
+# ===========================================================
 # REGIME TRANSITION ANALYSIS
-# ============================================================
+# ===========================================================
 
 def calculate_regime_transitions(df):
     """
     Calculate regime-to-regime transitions.
 
     Returns
-    -------
+    ------
     transition_matrix : pandas.DataFrame
         Counts of transitions from current regime to next regime.
 
@@ -831,10 +834,497 @@ def calculate_regime_duration(df):
 
     return durations, duration_summary
 
+def calculate_wilson_interval(successes, total, confidence=0.95):
+    """
+    Calculate the Wilson Score Interval for a binomial proportion.
+    Returns (lower_bound, upper_bound) as percentages (0-100 scale).
+    """
+    if total <= 0 or successes < 0 or successes > total:
+        return (0.0, 0.0)
 
-# ============================================================
+    alpha = 1.0 - confidence
+    try:
+        z = math.sqrt(2.0) * math.erfinv(1.0 - alpha)
+    except Exception:
+        z = 1.959963984540054
+
+    p = successes / total
+
+    denominator = 1.0 + (z**2) / total
+    center = (p + (z**2) / (2.0 * total)) / denominator
+    margin = (z / denominator) * math.sqrt((p * (1.0 - p) / total) + ((z**2) / (4.0 * (total**2))))
+
+    lower = max(0.0, (center - margin) * 100.0)
+    upper = min(100.0, (center + margin) * 100.0)
+
+    return (lower, upper)
+
+
+def calculate_next_day_regime(df):
+    """
+    Estimate the historical next-day regime distribution
+    for the latest available market regime.
+    """
+
+    regimes = df["Market_Regime"].dropna()
+
+    if len(regimes) < 2:
+        return {
+            "current_regime": None,
+            "sample_size": 0,
+            "reliability": classify_regime_reliability(0),
+            "probabilities": pd.Series(dtype=float),
+            "most_likely_regime": None,
+            "confidence_intervals": {},
+        }
+
+    current_regime = regimes.iloc[-1]
+
+    current_values = regimes.iloc[:-1].to_numpy()
+    next_values = regimes.iloc[1:].to_numpy()
+
+    transition_data = pd.DataFrame({
+        "Current": current_values,
+        "Next": next_values,
+    })
+
+    matching = transition_data[
+        transition_data["Current"] == current_regime
+    ]
+
+    sample_size = len(matching)
+    reliability = classify_regime_reliability(sample_size)
+
+    if sample_size == 0:
+        return {
+            "current_regime": current_regime,
+            "sample_size": 0,
+            "reliability": reliability,
+            "probabilities": pd.Series(dtype=float),
+            "most_likely_regime": None,
+            "confidence_intervals": {},
+        }
+
+    counts = matching["Next"].value_counts()
+    probabilities = (
+        counts
+        .div(sample_size)
+        .mul(100)
+        .sort_values(ascending=False)
+    )
+
+    confidence_intervals = {}
+    for reg, count in counts.items():
+        confidence_intervals[reg] = calculate_wilson_interval(count, sample_size, confidence=0.95)
+
+    most_likely_regime = probabilities.index[0]
+
+    return {
+        "current_regime": current_regime,
+        "sample_size": sample_size,
+        "reliability": reliability,
+        "probabilities": probabilities,
+        "most_likely_regime": most_likely_regime,
+        "confidence_intervals": confidence_intervals,
+    }
+
+
+def classify_regime_reliability(sample_size):
+    """
+    Classify the reliability of a next-day regime estimate
+    based on the number of historical transitions available.
+    """
+
+    if sample_size < 30:
+        return "Low"
+
+    if sample_size < 100:
+        return "Moderate"
+
+    if sample_size < 300:
+        return "Good"
+
+    return "Strong"
+
+
+# ===========================================================
+# WALK-FORWARD BACKTEST OF NEXT-DAY REGIME ESTIMATOR
+# ===========================================================
+
+def backtest_next_day_regime_estimator(df, min_history=30):
+    """
+    Perform a walk-forward backtest of the next-day regime estimator
+    without look-ahead bias.
+
+    For each date t index from min_history onwards:
+    - Current regime available at t is df.iloc[t]["Market_Regime\"].
+    - Actual next regime is df.iloc[t+1]["Market_Regime\"].
+    - Training transitions available at t include ONLY transitions
+      whose next regime is known by date t (i.e. transitions ending at or before t,
+      meaning transitions from index 0 up to t-1).
+    - Excludes the transition ending at t+1 (t -> t+1).
+    """
+    df = df.copy()
+    regimes = df["Market_Regime"]
+
+    n = len(df)
+    results = []
+
+    start_t = max(1, min_history)
+    for t in range(start_t, n - 1):
+        current_regime = regimes.iloc[t]
+        actual_next_regime = regimes.iloc[t+1]
+
+        if pd.isna(current_regime) or pd.isna(actual_next_regime):
+            continue
+
+        if t < 1:
+            continue
+
+        # Training transitions: all pairs (regimes.iloc[k], regimes.iloc[k+1])
+        # where the next state is known by date t (i.e. k+1 <= t).
+        # This means k ranges from 0 up to t-1, so next states are indices 1 up to t.
+        # Thus, transitions ending at or before t use data from index 0 to t.
+        if t >= 2:
+            c_vals = regimes.iloc[:t].to_numpy()[:-1]
+            n_vals = regimes.iloc[1:t].to_numpy()
+            trans_df = pd.DataFrame({"Current": c_vals, "Next": n_vals})
+        else:
+            trans_df = pd.DataFrame(columns=["Current", "Next"])
+
+        matching = trans_df[trans_df["Current"] == current_regime]
+        valid_matching = matching.dropna(subset=["Next"])
+        sample_size = len(valid_matching)
+        reliability = classify_regime_reliability(sample_size)
+
+        if sample_size == 0:
+            probabilities = pd.Series(dtype=float)
+            predicted_regime = None
+            predicted_probability = 0.0
+            actual_next_probability = 0.0
+            correct = False
+        else:
+            counts = valid_matching["Next"].value_counts()
+            probabilities = counts.div(sample_size).mul(100).sort_values(ascending=False)
+            predicted_regime = probabilities.index[0]
+            predicted_probability = probabilities.iloc[0]
+            actual_next_probability = probabilities.get(actual_next_regime, 0.0)
+            correct = (predicted_regime == actual_next_regime)
+
+        prediction_date = df.index[t]
+
+        results.append({
+            "prediction_date": prediction_date,
+            "current_regime": current_regime,
+            "predicted_regime": predicted_regime,
+            "actual_next_regime": actual_next_regime,
+            "predicted_probability": predicted_probability,
+            "actual_next_probability": actual_next_probability,
+            "probabilities": probabilities,
+            "sample_size": sample_size,
+            "reliability": reliability,
+            "correct": correct,
+        })
+
+    results_df = pd.DataFrame(results)
+
+    total_predictions = len(results_df)
+    if total_predictions == 0:
+        summary = {
+            "total_predictions": 0,
+            "correct_predictions": 0,
+            "overall_accuracy": 0.0,
+            "average_actual_next_probability": 0.0,
+            "accuracy_by_current_regime": {},
+            "prediction_count_by_current_regime": {},
+            "accuracy_by_reliability": {},
+            "prediction_count_by_reliability": {},
+            "results_df": results_df,
+        }
+        return results_df, summary
+
+    correct_predictions = int(results_df["correct"].sum())
+    overall_accuracy = (correct_predictions / total_predictions) * 100.0
+    average_actual_next_probability = float(results_df["actual_next_probability"].mean())
+
+    accuracy_by_current_regime = {}
+    prediction_count_by_current_regime = {}
+    for reg, group in results_df.groupby("current_regime"):
+        count = len(group)
+        corr = int(group["correct"].sum())
+        acc = (corr / count) * 100.0 if count > 0 else 0.0
+        accuracy_by_current_regime[reg] = acc
+        prediction_count_by_current_regime[reg] = count
+
+    accuracy_by_reliability = {}
+    prediction_count_by_reliability = {}
+    for rel, group in results_df.groupby("reliability"):
+        count = len(group)
+        corr = int(group["correct"].sum())
+        acc = (corr / count) * 100.0 if count > 0 else 0.0
+        accuracy_by_reliability[rel] = acc
+        prediction_count_by_reliability[rel] = count
+
+    summary = {
+        "total_predictions": total_predictions,
+        "correct_predictions": correct_predictions,
+        "overall_accuracy": overall_accuracy,
+        "average_actual_next_probability": average_actual_next_probability,
+        "accuracy_by_current_regime": accuracy_by_current_regime,
+        "prediction_count_by_current_regime": prediction_count_by_current_regime,
+        "accuracy_by_reliability": accuracy_by_reliability,
+        "prediction_count_by_reliability": prediction_count_by_reliability,
+        "results_df": results_df,
+    }
+
+    return results_df, summary
+
+
+# ===========================================================
+# PROBABILITY CALIBRATION EVALUATION
+# ===========================================================
+
+def calculate_probability_calibration(backtest_results):
+    """
+    Evaluate probability calibration from walk-forward backtest results using one-vs-rest for all five regimes.
+    """
+    if backtest_results is None or not isinstance(backtest_results, pd.DataFrame) or backtest_results.empty:
+        return {
+            "overall_brier_score": np.nan,
+            "brier_by_current_regime": {},
+            "brier_by_reliability": {},
+            "probability_bins": pd.DataFrame(),
+            "calibration_by_current_regime": {},
+            "calibration_by_reliability": {},
+            "calibration_by_regime": {},
+            "total_evaluated": 0,
+            "excluded_observations": [],
+        }
+
+    all_categories = ALL_REGIMES
+
+    brier_scores = []
+    bin_records = []
+
+    valid_rows = 0
+    excluded_rows = []
+
+    for idx, row in backtest_results.iterrows():
+        probs = row.get("probabilities")
+        actual = row.get("actual_next_regime")
+
+        if probs is None or pd.isna(actual) or not isinstance(probs, (pd.Series, dict)) or len(probs) == 0:
+            excluded_rows.append({"index": idx, "reason": "empty_or_missing_probabilities"})
+            continue
+
+        if isinstance(probs, pd.Series):
+            p_series = probs.copy()
+        else:
+            p_series = pd.Series(probs)
+
+        # 1. One-vs-rest calibration observations for ALL five regimes
+        for reg in all_categories:
+            reg_prob_100 = float(p_series.get(reg, 0.0))
+            if reg_prob_100 >= 100.0:
+                bin_idx = 9
+            else:
+                bin_idx = min(int(reg_prob_100 // 10), 9)
+
+            actual_outcome = 1.0 if (actual == reg) else 0.0
+
+            bin_records.append({
+                "prediction_date": row.get("prediction_date"),
+                "current_regime": row.get("current_regime"),
+                "reliability": row.get("reliability"),
+                "regime": reg,
+                "predicted_probability": reg_prob_100,
+                "bin_idx": bin_idx,
+                "actual_outcome": actual_outcome,
+            })
+
+        # 2. Multiclass Brier score vector (0-1 scale)
+        full_p = pd.Series(0.0, index=all_categories)
+        for cat in p_series.index:
+            if cat in full_p.index:
+                full_p[cat] = float(p_series[cat])
+        
+        p_sum = full_p.sum()
+        if p_sum > 0:
+            full_p = full_p / p_sum
+        else:
+            full_p[:] = 1.0 / len(all_categories)
+
+        one_hot = pd.Series(0.0, index=all_categories)
+        if actual in one_hot.index:
+            one_hot[actual] = 1.0
+
+        brier_row = np.sum((full_p - one_hot) ** 2)
+        brier_scores.append(brier_row)
+
+        valid_rows += 1
+
+    bins_df_raw = pd.DataFrame(bin_records)
+
+    # Build 10 bins (0-10%, 10-20%, ..., 90-100%) across all 14,290 observations
+    bins_data = []
+    bin_edges = [(i * 10, (i + 1) * 10) for i in range(10)]
+    
+    for i, (low, high) in enumerate(bin_edges):
+        if bins_df_raw.empty:
+            count, avg_pred, obs_freq, cal_error = 0, 0.0, 0.0, 0.0
+        else:
+            sub = bins_df_raw[bins_df_raw["bin_idx"] == i]
+            count = len(sub)
+            avg_pred = float(sub["predicted_probability"].mean()) if count > 0 else 0.0
+            obs_freq = float(sub["actual_outcome"].mean() * 100.0) if count > 0 else 0.0
+            cal_error = avg_pred - obs_freq if count > 0 else 0.0
+
+        bins_data.append({
+            "bin_range": f"{low}-{high}%",
+            "observation_count": count,
+            "average_predicted_probability": avg_pred,
+            "observed_frequency": obs_freq,
+            "calibration_error": cal_error,
+        })
+
+    bins_df = pd.DataFrame(bins_data)
+
+    overall_brier = float(np.mean(brier_scores)) if len(brier_scores) > 0 else np.nan
+
+    # Calibration by regime (one-vs-rest evaluation for each of the 5 regimes across 2,858 predictions each)
+    calibration_by_regime = {}
+    for reg in all_categories:
+        if bins_df_raw.empty:
+            obs_count = 0
+            pos_outcomes = 0
+            mean_pred = 0.0
+            obs_freq = 0.0
+            cal_err = 0.0
+        else:
+            sub_reg = bins_df_raw[bins_df_raw["regime"] == reg]
+            obs_count = len(sub_reg)
+            pos_outcomes = int(sub_reg["actual_outcome"].sum())
+            mean_pred = float(sub_reg["predicted_probability"].mean()) if obs_count > 0 else 0.0
+            obs_freq = float(sub_reg["actual_outcome"].mean() * 100.0) if obs_count > 0 else 0.0
+            cal_err = mean_pred - obs_freq if obs_count > 0 else 0.0
+
+        # Brier score component for this regime
+        reg_briers = []
+        for _, row in backtest_results.iterrows():
+            probs = row.get("probabilities")
+            actual = row.get("actual_next_regime")
+            if probs is None or pd.isna(actual) or len(probs) == 0:
+                continue
+            p_series = pd.Series(probs)
+            full_p = pd.Series(0.0, index=all_categories)
+            for cat in p_series.index:
+                if cat in full_p.index:
+                    full_p[cat] = float(p_series[cat])
+            p_sum = full_p.sum()
+            if p_sum > 0:
+                full_p = full_p / p_sum
+            else:
+                full_p[:] = 1.0 / len(all_categories)
+            actual_val = 1.0 if actual == reg else 0.0
+            reg_briers.append((full_p[reg] - actual_val) ** 2)
+
+        reg_brier_score = float(np.mean(reg_briers)) if len(reg_briers) > 0 else np.nan
+
+        calibration_by_regime[reg] = {
+            "observation_count": obs_count,
+            "positive_outcomes": pos_outcomes,
+            "mean_predicted_probability": mean_pred,
+            "observed_frequency": obs_freq,
+            "calibration_error": cal_err,
+            "brier_score": reg_brier_score,
+        }
+
+    # Brier and calibration by current regime
+    brier_by_current_regime = {}
+    calibration_by_current_regime = {}
+    for reg, group in backtest_results.groupby("current_regime"):
+        sub_briers = []
+        for _, row in group.iterrows():
+            probs = row.get("probabilities")
+            actual = row.get("actual_next_regime")
+            if probs is None or pd.isna(actual) or len(probs) == 0:
+                continue
+            p_series = pd.Series(probs)
+            full_p = pd.Series(0.0, index=all_categories)
+            for cat in p_series.index:
+                if cat in full_p.index:
+                    full_p[cat] = float(p_series[cat])
+            p_sum = full_p.sum()
+            if p_sum > 0:
+                full_p = full_p / p_sum
+            one_hot = pd.Series(0.0, index=all_categories)
+            if actual in one_hot.index:
+                one_hot[actual] = 1.0
+            sub_briers.append(np.sum((full_p - one_hot) ** 2))
+        
+        brier_by_current_regime[reg] = float(np.mean(sub_briers)) if len(sub_briers) > 0 else np.nan
+        
+        count = len(group)
+        mean_actual_prob = float(group["actual_next_probability"].mean()) if count > 0 else 0.0
+        hit_rate = float(group["correct"].mean() * 100.0) if count > 0 else 0.0
+        calibration_by_current_regime[reg] = {
+            "prediction_count": count,
+            "mean_predicted_probability_for_actual": mean_actual_prob,
+            "observed_hit_rate": hit_rate,
+            "brier_score": brier_by_current_regime.get(reg, np.nan),
+        }
+
+    # Brier and calibration by reliability
+    brier_by_reliability = {}
+    calibration_by_reliability = {}
+    for rel, group in backtest_results.groupby("reliability"):
+        sub_briers = []
+        for _, row in group.iterrows():
+            probs = row.get("probabilities")
+            actual = row.get("actual_next_regime")
+            if probs is None or pd.isna(actual) or len(probs) == 0:
+                continue
+            p_series = pd.Series(probs)
+            full_p = pd.Series(0.0, index=all_categories)
+            for cat in p_series.index:
+                if cat in full_p.index:
+                    full_p[cat] = float(p_series[cat])
+            p_sum = full_p.sum()
+            if p_sum > 0:
+                full_p = full_p / p_sum
+            one_hot = pd.Series(0.0, index=all_categories)
+            if actual in one_hot.index:
+                one_hot[actual] = 1.0
+            sub_briers.append(np.sum((full_p - one_hot) ** 2))
+        
+        brier_by_reliability[rel] = float(np.mean(sub_briers)) if len(sub_briers) > 0 else np.nan
+        
+        count = len(group)
+        mean_actual_prob = float(group["actual_next_probability"].mean()) if count > 0 else 0.0
+        hit_rate = float(group["correct"].mean() * 100.0) if count > 0 else 0.0
+        calibration_by_reliability[rel] = {
+            "prediction_count": count,
+            "mean_predicted_probability_for_actual": mean_actual_prob,
+            "observed_frequency": hit_rate,
+            "brier_score": brier_by_reliability.get(rel, np.nan),
+        }
+
+    return {
+        "overall_brier_score": overall_brier,
+        "brier_by_current_regime": brier_by_current_regime,
+        "brier_by_reliability": brier_by_reliability,
+        "probability_bins": bins_df,
+        "calibration_by_current_regime": calibration_by_current_regime,
+        "calibration_by_reliability": calibration_by_reliability,
+        "calibration_by_regime": calibration_by_regime,
+        "total_evaluated": valid_rows,
+        "excluded_observations": excluded_rows,
+    }
+
+
+# ===========================================================
 # REGIME QUALITY DIAGNOSTICS
-# ============================================================
+# ===========================================================
 
 def calculate_regime_diagnostics(df):
     """
@@ -948,9 +1438,9 @@ def summarize_regime_diagnostics(df):
     return summary
 
 
-# ============================================================
+# ===========================================================
 # REGIME SAMPLE QUALITY
-# ============================================================
+# ===========================================================
 
 def add_regime_sample_quality(
     df,
@@ -984,9 +1474,9 @@ def add_regime_sample_quality(
     return df
 
 
-# ============================================================
+# ===========================================================
 # BACKTEST ENGINE
-# ============================================================
+# ===========================================================
 
 def prepare_backtest(df):
     """
