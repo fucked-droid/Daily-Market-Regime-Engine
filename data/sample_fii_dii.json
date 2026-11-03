@@ -1,0 +1,32 @@
+{
+  "date": "03-Nov-2026",
+  "cash_market": {
+    "fii": {
+      "buy_value_crores": 14250.8,
+      "sell_value_crores": 12110.3,
+      "net_value_crores": 2140.5
+    },
+    "dii": {
+      "buy_value_crores": 10840.2,
+      "sell_value_crores": 9230.1,
+      "net_value_crores": 1610.1
+    },
+    "total_institutional_net_crores": 3750.6
+  },
+  "derivatives": {
+    "fii_index_futures": {
+      "long_contracts": 95200,
+      "short_contracts": 58400,
+      "total_contracts": 153600,
+      "long_ratio_pct": 61.98,
+      "short_ratio_pct": 38.02,
+      "net_contracts": 36800
+    },
+    "fii_index_options": {
+      "call_long": 280000,
+      "call_short": 195000,
+      "put_long": 185000,
+      "put_short": 260000
+    }
+  }
+}

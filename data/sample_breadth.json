@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-11-03T15:30:00",
+  "index": "NIFTY 50",
+  "advances": 36,
+  "declines": 13,
+  "unchanged": 1,
+  "total": 50,
+  "top_gainers": [
+    {"symbol": "TCS", "change_pct": 2.85, "weight": 4.1},
+    {"symbol": "INFY", "change_pct": 2.40, "weight": 5.6},
+    {"symbol": "HDFCBANK", "change_pct": 1.75, "weight": 11.2},
+    {"symbol": "RELIANCE", "change_pct": 1.30, "weight": 9.8},
+    {"symbol": "ICICIBANK", "change_pct": 1.15, "weight": 7.5}
+  ],
+  "top_losers": [
+    {"symbol": "BAJFINANCE", "change_pct": -1.45, "weight": 2.3},
+    {"symbol": "TITAN", "change_pct": -1.10, "weight": 1.4},
+    {"symbol": "SUNPHARMA", "change_pct": -0.85, "weight": 1.6}
+  ]
+}

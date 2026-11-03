@@ -19,6 +19,21 @@ from src.option_data import (
     load_cached_option_chain,
     analyze_option_chain,
 )
+from src.institutional_flow import (
+    fetch_fii_dii_data,
+    load_cached_fii_dii,
+    InstitutionalFlowAnalyzer,
+)
+from src.market_breadth import (
+    fetch_market_breadth,
+    load_cached_breadth,
+    MarketBreadthAnalyzer,
+)
+from src.global_cues import (
+    fetch_global_cues,
+    load_cached_global_cues,
+    GlobalCuesAnalyzer,
+)
 
 REPO_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_DIR))
@@ -179,6 +194,8 @@ def evaluate_live_alerts(
     forecast: Dict[str, Any],
     live_vix: Optional[Dict[str, Any]] = None,
     option_analysis: Optional[Dict[str, Any]] = None,
+    breadth_analysis: Optional[Dict[str, Any]] = None,
+    institutional_analysis: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, str]]:
     """
     Generate actionable real-time trading alerts based on live price action
@@ -305,6 +322,22 @@ def evaluate_live_alerts(
                     "message": f"PUT UNWINDING SLIP: Put writers exiting at {unw['strike']:,.0f} ({unw['chg_oi']:,} OI). Buyer floor deteriorating.",
                 })
 
+    # 7. Market Breadth Divergence Alerts
+    if breadth_analysis:
+        div = breadth_analysis.get("divergence_details", {})
+        if div.get("status") == "HOLLOW_RALLY_WARNING":
+            alerts.append({
+                "type": "BREADTH_DIVERGENCE",
+                "level": "WARNING",
+                "message": f"HOLLOW RALLY TRAP: Index is up (+{chg_pct:.2f}%) but declines ({div.get('declines')}) dominate advances ({div.get('advances')}). ADR: {div.get('adr'):.2f}.",
+            })
+        elif div.get("status") == "BULLISH_ABSORPTION_ACCUMULATION":
+            alerts.append({
+                "type": "BREADTH_ACCUMULATION",
+                "level": "INFO",
+                "message": f"BULLISH ACCUMULATION: Index dip is being strongly absorbed across {div.get('advances')}/50 stocks. ADR: {div.get('adr'):.2f}.",
+            })
+
     return alerts
 
 
@@ -316,6 +349,9 @@ def render_live_screen(
     market_status: Dict[str, Any],
     alerts: List[Dict[str, str]],
     option_analysis: Optional[Dict[str, Any]] = None,
+    institutional_analysis: Optional[Dict[str, Any]] = None,
+    breadth_analysis: Optional[Dict[str, Any]] = None,
+    global_analysis: Optional[Dict[str, Any]] = None,
     iteration: int = 1,
 ):
     """Render real-time live market surveillance view."""
@@ -385,6 +421,31 @@ def render_live_screen(
         print(f"  - Positioning   : {option_analysis.get('positioning_summary')}")
         print("-" * 76)
 
+    # Institutional Smart Money & Market Breadth & Global Cues
+    if institutional_analysis:
+        cs = institutional_analysis.get("cash_summary", {})
+        ds = institutional_analysis.get("derivatives_summary", {})
+        print(" INSTITUTIONAL SMART MONEY & DERIVATIVES FLOW:")
+        print(f"  - Cash Net Flow : FII: {cs.get('fii_net_crores', 0):+,.1f} Cr | DII: {cs.get('dii_net_crores', 0):+,.1f} Cr (Total: {cs.get('total_net_crores', 0):+,.1f} Cr)")
+        print(f"  - Index Futures : Long {ds.get('long_ratio_pct', 50):.1f}% vs Short {ds.get('short_ratio_pct', 50):.1f}% (Net: {ds.get('net_contracts', 0):+,d})")
+        print(f"  - Smart Sentiment: Score {institutional_analysis.get('composite_score', 0):+.2f} / 2.00 [{institutional_analysis.get('verdict')}]")
+        print("-" * 76)
+
+    if breadth_analysis:
+        d = breadth_analysis.get("divergence_details", {})
+        print(" MARKET BREADTH (NIFTY 50) & ADVANCE-DECLINE HEALTH:")
+        print(f"  - A/D Count     : Advances: {d.get('advances')} | Declines: {d.get('declines')} | ADR: {d.get('adr'):.2f}")
+        print(f"  - Health Status : {d.get('status')} [{d.get('signal')}]")
+        print("-" * 76)
+
+    if global_analysis:
+        gap = global_analysis.get("gap_prediction", {})
+        macro = global_analysis.get("macro_tailwinds", {})
+        print(" GLOBAL CUES & GIFT NIFTY OPENING INDICATION:")
+        print(f"  - GIFT NIFTY    : {gap.get('gift_nifty_price', 0):,.1f} (Indicating Gap: {gap.get('gap_points', 0):+,.1f} pts / {gap.get('gap_pct', 0):+.2f}%)")
+        print(f"  - Macro Status  : {macro.get('crude_desc')}")
+        print("-" * 76)
+
     # Live Alerts
     print(" LIVE ACTIONABLE ALERTS:")
     if alerts:
@@ -442,7 +503,23 @@ def run_live_market_loop(
                 opt_raw = fetch_nse_option_chain("NIFTY") or load_cached_option_chain()
                 option_analysis = analyze_option_chain(opt_raw, spot_price=live_nifty["price"]) if opt_raw else None
 
-                alerts = evaluate_live_alerts(live_nifty, forecast, live_vix, option_analysis=option_analysis)
+                inst_raw = fetch_fii_dii_data() or load_cached_fii_dii()
+                institutional_analysis = InstitutionalFlowAnalyzer(inst_raw).compute_smart_money_score() if inst_raw else None
+
+                breadth_raw = fetch_market_breadth() or load_cached_breadth()
+                breadth_analysis = MarketBreadthAnalyzer(breadth_raw).compute_breadth_score(index_change_pct=live_nifty["change_pct"]) if breadth_raw else None
+
+                global_raw = fetch_global_cues() or load_cached_global_cues()
+                global_analysis = GlobalCuesAnalyzer(global_raw).compute_global_sentiment_score(spot_close=live_nifty["price"]) if global_raw else None
+
+                alerts = evaluate_live_alerts(
+                    live_nifty=live_nifty,
+                    forecast=forecast,
+                    live_vix=live_vix,
+                    option_analysis=option_analysis,
+                    breadth_analysis=breadth_analysis,
+                    institutional_analysis=institutional_analysis,
+                )
                 render_live_screen(
                     live_nifty=live_nifty,
                     live_vix=live_vix,
@@ -451,6 +528,9 @@ def run_live_market_loop(
                     market_status=market_status,
                     alerts=alerts,
                     option_analysis=option_analysis,
+                    institutional_analysis=institutional_analysis,
+                    breadth_analysis=breadth_analysis,
+                    global_analysis=global_analysis,
                     iteration=iteration,
                 )
             else:

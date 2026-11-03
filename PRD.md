@@ -1,11 +1,15 @@
-# Product Requirements Document (PRD)
+# Product Requirements Document (PRD) — Advanced Institutional Tools
 
 ## Objective
-Enhance the Daily Market Regime Engine with Option Chain analysis to identify institutional buyer/seller positioning (Open Interest, Call/Put writing, Max Pain, PCR) and predict intraday and daily momentum on both historical and live data.
+Supercharge the Daily Market Regime Engine with three institutional-grade modules:
+1. FII / DII Smart Money Inflow & Derivatives Positioning (`src/institutional_flow.py`)
+2. Market Breadth: NIFTY 50 Advance-Decline (A/D) & Divergence Engine (`src/market_breadth.py`)
+3. Global Cues & GIFT NIFTY Opening Gap Predictor (`src/global_cues.py`)
 
 ## Tasks
-- [x] Task 1: Create `src/option_data.py` with NSE option chain fetching, parser, PCR, Max Pain, and strike concentration analysis.
-- [x] Task 2: Create offline sample option fixture `data/sample_option_chain.json` and unit test suite `test_option_data.py`.
-- [x] Task 3: Integrate Option Chain analysis into `src/live_scanner.py` for real-time buyer/seller alerts and intraday momentum tracking.
-- [x] Task 4: Integrate Option Chain insights into `scan_nifty.py` daily forecast CLI report.
-- [x] Task 5: Run full test suite (`python run_all_tests.py`) and perform CodeRabbit pre-merge review.
+- [x] Task 1: Build `src/institutional_flow.py` and `data/sample_fii_dii.json` for FII/DII cash flows & Index Futures Long/Short ratio.
+- [x] Task 2: Build `src/market_breadth.py` and `data/sample_breadth.json` for Advance/Decline ratio, hollow rally traps, and breadth scoring.
+- [x] Task 3: Build `src/global_cues.py` for GIFT Nifty gap forecasting and macro cues (Crude, US yields).
+- [x] Task 4: Create comprehensive unit tests in `test_advanced_tools.py` with 100% test pass.
+- [x] Task 5: Integrate Institutional Flows, Market Breadth, and Global Cues into `scan_nifty.py` and `src/live_scanner.py`.
+- [x] Task 6: Run master test suite (`python run_all_tests.py`), verify CodeRabbit standards, and commit.

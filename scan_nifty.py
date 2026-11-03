@@ -48,6 +48,21 @@ from src.option_data import (
     load_cached_option_chain,
     analyze_option_chain,
 )
+from src.institutional_flow import (
+    fetch_fii_dii_data,
+    load_cached_fii_dii,
+    InstitutionalFlowAnalyzer,
+)
+from src.market_breadth import (
+    fetch_market_breadth,
+    load_cached_breadth,
+    MarketBreadthAnalyzer,
+)
+from src.global_cues import (
+    fetch_global_cues,
+    load_cached_global_cues,
+    GlobalCuesAnalyzer,
+)
 
 
 def scan_and_predict(
@@ -166,8 +181,35 @@ def scan_and_predict(
         except Exception:
             option_data = None
 
-    # 8. Directional Movement Bias
-    # Synthesize Trend Score + Momentum Score + Weekly Trend + Distance to S/R + Option Positioning
+    # 8. Institutional Smart Money Flow (FII / DII)
+    institutional_data = None
+    try:
+        fii_dii_raw = fetch_fii_dii_data() if update_data else load_cached_fii_dii()
+        inst_analyzer = InstitutionalFlowAnalyzer(fii_dii_raw)
+        institutional_data = inst_analyzer.compute_smart_money_score()
+    except Exception:
+        institutional_data = None
+
+    # 9. Market Breadth & Divergence
+    breadth_data = None
+    try:
+        breadth_raw = fetch_market_breadth() if update_data else load_cached_breadth()
+        breadth_analyzer = MarketBreadthAnalyzer(breadth_raw)
+        breadth_data = breadth_analyzer.compute_breadth_score(index_change_pct=change_pct)
+    except Exception:
+        breadth_data = None
+
+    # 10. Global Cues & GIFT NIFTY Opening Gap Predictor
+    global_cues_data = None
+    try:
+        global_raw = fetch_global_cues() if update_data else load_cached_global_cues()
+        global_analyzer = GlobalCuesAnalyzer(global_raw)
+        global_cues_data = global_analyzer.compute_global_sentiment_score(spot_close=close)
+    except Exception:
+        global_cues_data = None
+
+    # 11. Directional Movement Bias
+    # Synthesize Trend Score + Momentum + S/R + Options + Institutional Flows + Breadth + Global Cues
     bias_points = 0
     if trend_score >= 2:
         bias_points += 2
@@ -185,22 +227,40 @@ def scan_and_predict(
         bias_points -= 1
 
     if nearest_support and (close - nearest_support["price"]) < (atr_14 * 0.4):
-        # Bounce zone near support
         bias_points += 1
     elif nearest_resistance and (nearest_resistance["price"] - close) < (atr_14 * 0.4):
-        # Resistance overhead
         bias_points -= 1
 
     if option_data:
-        # Incorporate institutional Call/Put writer skew
-        bias_points += option_data["momentum_score"]
+        bias_points += option_data.get("momentum_score", 0)
 
-    if bias_points >= 2:
+    if institutional_data:
+        v = institutional_data.get("verdict", "")
+        if v in ("BULLISH", "MILD_BULLISH"):
+            bias_points += 1
+        elif v in ("BEARISH", "MILD_BEARISH"):
+            bias_points -= 1
+
+    if breadth_data:
+        r = breadth_data.get("regime", "")
+        if "BULLISH" in r:
+            bias_points += 1
+        elif "BEARISH" in r:
+            bias_points -= 1
+
+    if global_cues_data:
+        gv = global_cues_data.get("verdict", "")
+        if "BULLISH" in gv or "POSITIVE" in gv:
+            bias_points += 1
+        elif "BEARISH" in gv or "NEGATIVE" in gv:
+            bias_points -= 1
+
+    if bias_points >= 3:
         trading_bias = "BULLISH (Upward Momentum Favored)"
-        conviction = "High" if bias_points >= 4 else "Moderate"
-    elif bias_points <= -2:
+        conviction = "High" if bias_points >= 5 else "Moderate"
+    elif bias_points <= -3:
         trading_bias = "BEARISH (Downward Momentum Favored)"
-        conviction = "High" if bias_points <= -4 else "Moderate"
+        conviction = "High" if bias_points <= -5 else "Moderate"
     else:
         trading_bias = "NEUTRAL / RANGEBOUND (Consolidation Favored)"
         conviction = "Moderate"
@@ -267,6 +327,9 @@ def scan_and_predict(
         "trading_bias": trading_bias,
         "conviction": conviction,
         "option_data": option_data,
+        "institutional_data": institutional_data,
+        "breadth_data": breadth_data,
+        "global_cues_data": global_cues_data,
         "news": news_items,
     }
 
@@ -331,28 +394,55 @@ def print_dashboard(forecast: dict):
         p_strike = top_puts[0].get("strike", 0)
         p_oi = top_puts[0].get("oi", 0)
         p_chg = top_puts[0].get("chg_oi", 0)
-        print(f"    - Major Call Wall  : {c_strike:,.0f} (Open Interest: {c_oi:,} | Intraday Chg: {c_chg:+,}) -> Institutional Ceiling")
-        print(f"    - Major Put Floor  : {p_strike:,.0f} (Open Interest: {p_oi:,} | Intraday Chg: {p_chg:+,}) -> Institutional Floor")
+        print(f"    - Major Call Wall  : {c_strike:,.0f} (OI: {c_oi:,} | Intraday Chg: {c_chg:+,}) -> Institutional Ceiling")
+        print(f"    - Major Put Floor  : {p_strike:,.0f} (OI: {p_oi:,} | Intraday Chg: {p_chg:+,}) -> Institutional Floor")
         exp_opt = opt.get("expected_option_range", (0, 0))
         print(f"    - Option Move Band : {exp_opt[0]:,.1f}  <--->  {exp_opt[1]:,.1f}  (ATM Straddle: ~{opt.get('atm_straddle_price', 0):,.1f} pts)")
         print(f"    - Option Bias      : Score {opt.get('momentum_score'):+d}/2 [{opt.get('regime_label')}]")
         print(f"    - Setup Summary    : {opt.get('positioning_summary')}")
-        if opt.get("signals"):
-            print("    - Key Signals      :")
-            for s in opt["signals"][:3]:
-                print(f"       * {s}")
 
-    print("\n 6. TRADER'S CHART SETUP & ACTION GUIDE (SIMPLE LANGUAGE):")
-    print("    [WHAT LINES TO MARK ON YOUR CHART]:")
+    inst = forecast.get("institutional_data")
+    if inst:
+        cs = inst.get("cash_summary", {})
+        ds = inst.get("derivatives_summary", {})
+        print("\n 6. FII / DII SMART MONEY & INDEX FUTURES POSITIONING:")
+        print(f"    - Cash Market Flow : FII Net: {cs.get('fii_net_crores', 0):+,.1f} Cr | DII Net: {cs.get('dii_net_crores', 0):+,.1f} Cr (Total Net: {cs.get('total_net_crores', 0):+,.1f} Cr)")
+        print(f"    - Cash Flow Bias   : {cs.get('regime')} -> {cs.get('commentary')}")
+        print(f"    - FII Index Futures: Long {ds.get('long_ratio_pct', 50)}% vs Short {ds.get('short_ratio_pct', 50)}% (Net: {ds.get('net_contracts', 0):+,d} contracts)")
+        print(f"    - Smart Money Score: {inst.get('composite_score', 0):+.2f} / 2.00 [{inst.get('verdict')}] ({ds.get('description')})")
+
+    breadth = forecast.get("breadth_data")
+    if breadth:
+        d = breadth.get("divergence_details", {})
+        print("\n 7. MARKET BREADTH & ADVANCE-DECLINE (A/D) CONFIRMATION:")
+        print(f"    - NIFTY 50 Breadth : Advances: {d.get('advances')} | Declines: {d.get('declines')} | ADR: {d.get('adr'):.2f}")
+        print(f"    - Divergence Status: {d.get('status')} [{d.get('signal')}]")
+        print(f"    - Breadth Score    : {breadth.get('score'):+.2f} / 2.00 [{breadth.get('regime')}]")
+        print(f"    - Market Health    : {d.get('description')}")
+
+    gc = forecast.get("global_cues_data")
+    if gc:
+        gap = gc.get("gap_prediction", {})
+        macro = gc.get("macro_tailwinds", {})
+        us = gc.get("us_markets", {})
+        print("\n 8. GLOBAL CUES & GIFT NIFTY OPENING GAP PREDICTION:")
+        print(f"    - GIFT NIFTY Spot  : {gap.get('gift_nifty_price', 0):,.1f} (Indicating Gap: {gap.get('gap_points', 0):+,.1f} pts / {gap.get('gap_pct', 0):+.2f}%)")
+        print(f"    - Projected Open   : {gap.get('projected_open', 0):,.1f} [{gap.get('category')}]")
+        print(f"    - Wall Street Cues : S&P 500: {us.get('sp500_change_pct', 0):+.2f}% | NASDAQ: {us.get('nasdaq_change_pct', 0):+.2f}%")
+        print(f"    - Macro Commodities: {macro.get('crude_desc')}")
+        print(f"    - Opening Playbook : {gap.get('playbook')}")
+
+    print("\n 9. TRADER'S CHART SETUP & ACTION GUIDE (SIMPLE HINGLISH):")
+    print("    [CHART PAR KYA LINES DRAW KARNI HAIN]:")
     if nr:
-        print(f"    - RED LINE (Resistance R1) : Mark at {nr['price']:,.0f} (Zone: {nr['range'][0]:,.0f} to {nr['range'][1]:,.0f})")
+        print(f"    - LAAL LINE (Resistance R1) : {nr['price']:,.0f} par mark karein (Zone: {nr['range'][0]:,.0f} se {nr['range'][1]:,.0f})")
     if ns:
-        print(f"    - GREEN LINE (Support S1)  : Mark at {ns['price']:,.0f} (Zone: {ns['range'][0]:,.0f} to {ns['range'][1]:,.0f})")
+        print(f"    - HARI LINE (Support S1)    : {ns['price']:,.0f} par mark karein (Zone: {ns['range'][0]:,.0f} se {ns['range'][1]:,.0f})")
     if "expected_daily_upper" in exp and "expected_daily_lower" in exp:
-        print(f"    - DOTTED TOP (Day Ceiling) : Mark at {exp['expected_daily_upper']:,.0f} (Tomorrow's max expected high)")
-        print(f"    - DOTTED BTM (Day Floor)   : Mark at {exp['expected_daily_lower']:,.0f} (Tomorrow's max expected low)")
+        print(f"    - DOTTED TOP (Day Ceiling)  : {exp['expected_daily_upper']:,.0f} (Kal ka maximum expected high)")
+        print(f"    - DOTTED BTM (Day Floor)    : {exp['expected_daily_lower']:,.0f} (Kal ka maximum expected low)")
 
-    print("\n    [HOW TO TRADE TOMORROW'S SESSION]:")
+    print("\n    [KAL TRADE KAISE KAREIN - SIMPLE ACTION PLAYBOOK]:")
     close_val = forecast["nifty_close"]
     r_val = nr["price"] if nr else exp.get("expected_daily_upper", close_val * 1.01)
     r_upper = nr["range"][1] if nr else exp.get("expected_daily_upper", close_val * 1.01)
@@ -361,12 +451,12 @@ def print_dashboard(forecast: dict):
     ceiling = exp.get("expected_daily_upper", r_upper)
     floor = exp.get("expected_daily_lower", s_lower)
 
-    print(f"    * SCENARIO 1 (BREAKOUT BUY): If Nifty crosses and closes a 15-min candle above {r_val:,.0f},")
-    print(f"      go LONG (Buy Call/Future). Targets: {r_upper:,.0f} and {ceiling:,.0f}. Stop-Loss: {close_val:,.0f}.")
-    print(f"    * SCENARIO 2 (RESISTANCE REJECTION SHORT): If Nifty touches {r_val:,.0f} and fails to cross (makes a red candle),")
-    print(f"      go SHORT (Buy Put). Targets: {close_val:,.0f} and {s_val:,.0f}. Stop-Loss: {r_upper + 20:,.0f}.")
-    print(f"    * SCENARIO 3 (DIP BUY AT SUPPORT): If Nifty pulls back toward {s_val:,.0f} (Zone: {s_lower:,.0f} - {s_val:,.0f}),")
-    print(f"      look for a green bounce candle to BUY. Target: {close_val:,.0f}. Stop-Loss: {floor:,.0f}.")
+    print(f"    * PLAN A (BREAKOUT BUY): Agar NIFTY 15-minute candle {r_val:,.0f} ke upar close kare,")
+    print(f"      toh Call (CE) buy karein. Targets: {r_upper:,.0f} aur {ceiling:,.0f}. Stop-Loss: {close_val:,.0f}.")
+    print(f"    * PLAN B (RESISTANCE REJECTION SHORT): Agar NIFTY {r_val:,.0f} touch karke wahan se red candle banaye,")
+    print(f"      toh Put (PE) buy karein. Targets: {close_val:,.0f} aur {s_val:,.0f}. Stop-Loss: {r_upper + 20:,.0f}.")
+    print(f"    * PLAN C (DIP BUY AT SUPPORT): Agar NIFTY gir kar {s_val:,.0f} (Zone: {s_lower:,.0f} - {s_val:,.0f}) par aaye aur hari bounce candle banaye,")
+    print(f"      toh Call (CE) buy karein. Target: {close_val:,.0f}. Stop-Loss: {floor:,.0f}.")
 
     print("-" * 72)
     print(f" FORECAST BIAS     : {forecast['trading_bias']}")

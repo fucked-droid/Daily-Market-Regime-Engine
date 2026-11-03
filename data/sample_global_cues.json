@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-11-04T07:30:00",
+  "gift_nifty": {
+    "last_price": 24085.0,
+    "change": 95.0,
+    "change_pct": 0.40,
+    "spot_reference_close": 23990.0
+  },
+  "us_markets": {
+    "sp500_change_pct": 0.55,
+    "nasdaq_change_pct": 0.82,
+    "dow_change_pct": 0.25
+  },
+  "commodities_currencies": {
+    "brent_crude_usd": 74.20,
+    "brent_crude_change_pct": -0.85,
+    "us_10y_yield": 4.15,
+    "us_10y_yield_change_bps": -3.2,
+    "usdinr": 84.10,
+    "usdinr_change_pct": -0.05
+  }
+}
