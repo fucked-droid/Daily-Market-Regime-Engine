@@ -279,8 +279,9 @@ def render_live_screen(
     iteration: int = 1,
 ):
     """Render real-time live market surveillance view."""
-    # Clear screen on Windows / POSIX
-    os.system("cls" if os.name == "nt" else "clear")
+    # Clear screen on Windows / POSIX only if running in an interactive terminal
+    if sys.stdout.isatty():
+        os.system("cls" if os.name == "nt" else "clear")
 
     print("=" * 76)
     print("           NIFTY 50 LIVE MARKET SCANNER & REGIME SURVEILLANCE")
@@ -351,13 +352,14 @@ def render_live_screen(
 
     if nr and live_nifty['price'] >= (nr['price'] - 100):
         print(f"  * TRADE RULE: Spot ({live_nifty['price']:,.0f}) is testing Resistance ({nr['price']:,.0f}). Do NOT buy blindly.")
-        print(f"    - BUY CALL only if a 15-min candle closes above {nr['price']:,.0f} (Target: {exp.get('expected_daily_upper', 23735):,.0f}).")
-        print(f"    - BUY PUT if you see red rejection candles below {nr['price']:,.0f} (Target: 23,300 - 23,200).")
+        print(f"    - BUY CALL only if a 15-min candle closes above {nr['price']:,.0f} (Target: {exp.get('expected_daily_upper', nr['range'][1]):,.0f}).")
+        print(f"    - BUY PUT if you see red rejection candles below {nr['price']:,.0f} (Target: {ns['price'] if ns else live_nifty['price'] - 200:,.0f}).")
     else:
-        print(f"  * TRADE RULE: Buy on dips near Support ({ns['price'] if ns else 23200:,.0f}) or breakout above {nr['price'] if nr else 23540:,.0f}.")
+        print(f"  * TRADE RULE: Buy on dips near Support ({ns['price'] if ns else 22229:,.0f}) or breakout above {nr['price'] if nr else 24394:,.0f}.")
 
     print("=" * 76)
     print(" Press Ctrl+C to stop live scanning.")
+    sys.stdout.flush()
 
 
 def run_live_market_loop(
