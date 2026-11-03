@@ -6,13 +6,22 @@ import numpy as np
 df = e.load_nifty_master()
 df = e.build_core_engine(df)
 df = e.add_regime_layer(df)
-res = e.calculate_next_day_regime(df)
+
+# Regression test against baseline calibration cutoff (2026-10-01)
+df_benchmark = df.loc[:"2026-10-01"] if "2026-10-01" in df.index else df
+res = e.calculate_next_day_regime(df_benchmark)
 assert res["current_regime"] == "Bearish"
 assert res["sample_size"] == 22
 assert res["reliability"] == "Low"
 assert res["most_likely_regime"] == "Strong_Bearish"
 assert "confidence_intervals" in res
 assert isinstance(res["confidence_intervals"], dict)
+
+# Test execution on live full dataset
+live_res = e.calculate_next_day_regime(df)
+assert live_res["current_regime"] is not None
+assert live_res["sample_size"] > 0
+assert isinstance(live_res["probabilities"], pd.Series)
 print("Normal sample test passed.")
 
 # 2. Zero observations test

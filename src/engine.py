@@ -33,15 +33,54 @@ ALL_REGIMES = ["Bearish", "Bullish", "Mixed", "Strong_Bearish", "Strong_Bullish"
 # LOAD MASTER DATA
 # ============================================================
 
-def load_nifty_master():
+def load_nifty_master(source=None):
     """
-    Load the latest NIFTY master dataframe from GitHub.
+    Load the NIFTY master dataframe.
+    Priority:
+    1. If source='online', fetch from MASTER_URL.
+    2. Try local MASTER_PARQUET if exists.
+    3. Try local MASTER_CSV if exists.
+    4. Fallback to MASTER_URL.
     """
+    df = None
 
-    df = pd.read_parquet(MASTER_URL)
+    if source != "online":
+        if MASTER_PARQUET.exists():
+            try:
+                df = pd.read_parquet(MASTER_PARQUET)
+            except Exception:
+                df = None
+        if df is None and MASTER_CSV.exists():
+            try:
+                df = pd.read_csv(MASTER_CSV, index_col=0, parse_dates=True)
+            except Exception:
+                df = None
+
+    if df is None:
+        try:
+            df = pd.read_parquet(MASTER_URL)
+        except Exception as exc:
+            if MASTER_PARQUET.exists():
+                df = pd.read_parquet(MASTER_PARQUET)
+            elif MASTER_CSV.exists():
+                df = pd.read_csv(MASTER_CSV, index_col=0, parse_dates=True)
+            else:
+                raise RuntimeError(
+                    f"Could not load Nifty master data from online or local: {exc}"
+                )
 
     df.index = pd.to_datetime(df.index)
     df = df.sort_index()
+
+    if df.index.duplicated().any():
+        df = df[~df.index.duplicated(keep="last")]
+
+    # Replace string 'Ellipsis' with np.nan if present
+    for col in df.columns:
+        if df[col].dtype == "object":
+            mask = df[col].astype(str) == "Ellipsis"
+            if mask.any():
+                df.loc[mask, col] = np.nan
 
     return df
 

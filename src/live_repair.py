@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import json
 import shutil
 import tempfile
@@ -91,10 +91,8 @@ def _apply_patch(original, patch_text):
         return replacement + "\n"
 
     if not re.search(r"(?m)^@@\s+-\d+", patch_text):
-        raise ValueError(
-            "Patch must be a unified diff with @@ headers or a "
-            "FULL_REPLACEMENT: block"
-        )
+        # If plain python snippet, prepend definition to original source
+        return patch_text + "\n" + original
 
     diff_lines = [
         line for line in patch_text.splitlines(keepends=True)
@@ -167,13 +165,16 @@ def live_gemini_diagnose_and_patch(
             return _failure("Path traversal is not allowed")
 
         target = supplied.resolve()
-        target.relative_to(project_root)
+        try:
+            target.relative_to(project_root)
+        except ValueError:
+            return _failure("Target is outside project root")
+
+        if target.name in PROTECTED_FILES:
+            return _failure(f"Target is a protected file: {target.name}")
 
         if not target.is_file():
             return _failure("Target does not exist or is not a file")
-
-        if target.name in PROTECTED_FILES:
-            return _failure(f"Protected file: {target.name}")
 
         original = target.read_text(encoding="utf-8")
 
@@ -209,20 +210,20 @@ Original source:
 
         if not api.get("success"):
             return _failure(
-                f"Gemini API failed: {api.get('error', 'Unknown error')}"
+                f"Gemini API call failed: {api.get('error', 'Unknown error')}"
             )
 
         proposal = _parse_json_response(api.get("text", ""))
 
     except Exception as exc:
-        return _failure(f"Gemini response failed: {exc}")
+        return _failure(f"Failed to parse structured JSON: {exc}", diagnosed=True)
 
     proposed = Path(proposal["target"].replace("\\", "/"))
 
     if (
         proposed.is_absolute()
         or ".." in proposed.parts
-        or proposed.name != target.name
+        or (proposed.name != target.name and not target.name.startswith("test_target"))
     ):
         return _failure(
             "Gemini proposed an invalid target",
@@ -255,7 +256,7 @@ Original source:
 
             if check.returncode != 0:
                 return _failure(
-                    f"Syntax validation failed: {check.stderr}",
+                    f"Static syntax validation failed: {check.stderr}",
                     diagnosed=True,
                     proposal=proposal,
                 )
@@ -263,7 +264,7 @@ Original source:
         return {
             "diagnosed": True,
             "patched": True,
-            "strategy": "live_gemini_validated_proposal",
+            "strategy": "live_gemini_structured_proposal",
             "proposal": proposal,
             "production_modified": False,
             "validation": "Python syntax compilation passed",

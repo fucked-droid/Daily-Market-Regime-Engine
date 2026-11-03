@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Fetch today's top news headlines via RSS, format them as JSON,
-and save them to a file.
+Fetch today's top financial and market news headlines via RSS, format them as JSON,
+and save them to a file for market sentiment analysis.
 """
 
 import argparse
@@ -13,21 +13,36 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
-DEFAULT_FEED_URL = "http://feeds.bbci.co.uk/news/rss.xml"
+INDIAN_MARKET_FEEDS = [
+    "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
+    "https://www.moneycontrol.com/rss/marketreports.xml",
+    "https://www.livemint.com/rss/markets",
+]
+DEFAULT_FEED_URL = INDIAN_MARKET_FEEDS[0]
 DEFAULT_OUTPUT_FILE = "headlines.json"
 DEFAULT_LIMIT = 5
 
 
 def fetch_rss(url: str, timeout: int = 30) -> bytes:
-    """Fetch raw XML data from an RSS feed URL."""
+    """Fetch raw XML data from an RSS feed URL, falling back to alternatives if needed."""
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NewsFetcher/1.0"
     }
-    request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        if response.status != 200:
-            raise RuntimeError(f"HTTP request failed with status code: {response.status}")
-        return response.read()
+
+    candidates = [url] + [u for u in INDIAN_MARKET_FEEDS if u != url]
+    last_err = None
+
+    for candidate_url in candidates:
+        try:
+            request = urllib.request.Request(candidate_url, headers=headers)
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                if response.status == 200:
+                    return response.read()
+        except Exception as exc:
+            last_err = exc
+            continue
+
+    raise RuntimeError(f"HTTP request failed across all candidate feeds: {last_err}")
 
 
 def parse_rss_items(xml_content: bytes, limit: int = 5) -> List[Dict[str, Any]]:

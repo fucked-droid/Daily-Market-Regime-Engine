@@ -1,10 +1,27 @@
-import subprocess
-import sys
+#!/usr/bin/env python3
+"""
+Test runner for Daily-Market-Regime-Engine.
+Discovers and executes all test suites across the repository.
+"""
 
-test_files = ['test_import.py', 'test_run.py', 'test_list_src.py', 'test_engine_next_day.py']
-for tf in test_files:
-    print(f"--- Running {tf} ---")
-    result = subprocess.run([sys.executable, tf], capture_output=True, text=True)
-    print("Exit code:", result.returncode)
-    print("STDOUT:\n", result.stdout)
-    print("STDERR:\n", result.stderr)
+import os
+import sys
+import unittest
+from pathlib import Path
+
+REPO_DIR = Path(__file__).resolve().parent
+os.chdir(REPO_DIR)
+sys.path.insert(0, str(REPO_DIR))
+sys.path.insert(0, str(REPO_DIR / "src"))
+
+
+def main():
+    loader = unittest.TestLoader()
+    suite = loader.discover(start_dir=str(REPO_DIR), pattern="test_*.py")
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+    return 0 if result.wasSuccessful() else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
