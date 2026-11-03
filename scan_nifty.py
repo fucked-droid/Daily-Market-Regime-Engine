@@ -43,11 +43,17 @@ from src.multi_timeframe import (
     align_daily_weekly,
 )
 from src.support_resistance import build_support_resistance_zones
+from src.option_data import (
+    fetch_nse_option_chain,
+    load_cached_option_chain,
+    analyze_option_chain,
+)
 
 
 def scan_and_predict(
     update_data: bool = False,
     include_news: bool = False,
+    include_options: bool = True,
 ) -> dict:
     """Run full scan and return structured forecast dictionary."""
     new_rows_count = 0
@@ -146,8 +152,22 @@ def scan_and_predict(
         current_vix=current_vix,
     )
 
-    # 7. Directional Movement Bias
-    # Synthesize Trend Score + Momentum Score + Weekly Trend + Distance to S/R
+    # 7. Institutional Option Chain & Positioning
+    option_data = None
+    if include_options:
+        try:
+            opt_raw = None
+            if update_data:
+                opt_raw = fetch_nse_option_chain("NIFTY")
+            if opt_raw is None:
+                opt_raw = load_cached_option_chain()
+            if opt_raw:
+                option_data = analyze_option_chain(opt_raw, spot_price=close)
+        except Exception:
+            option_data = None
+
+    # 8. Directional Movement Bias
+    # Synthesize Trend Score + Momentum Score + Weekly Trend + Distance to S/R + Option Positioning
     bias_points = 0
     if trend_score >= 2:
         bias_points += 2
@@ -170,6 +190,10 @@ def scan_and_predict(
     elif nearest_resistance and (nearest_resistance["price"] - close) < (atr_14 * 0.4):
         # Resistance overhead
         bias_points -= 1
+
+    if option_data:
+        # Incorporate institutional Call/Put writer skew
+        bias_points += option_data["momentum_score"]
 
     if bias_points >= 2:
         trading_bias = "BULLISH (Upward Momentum Favored)"
@@ -242,6 +266,7 @@ def scan_and_predict(
         } if nearest_resistance else None,
         "trading_bias": trading_bias,
         "conviction": conviction,
+        "option_data": option_data,
         "news": news_items,
     }
 
@@ -293,7 +318,31 @@ def print_dashboard(forecast: dict):
     else:
         print("    - Insufficient transition history.")
 
-    print("\n 5. TRADER'S CHART SETUP & ACTION GUIDE (SIMPLE LANGUAGE):")
+    opt = forecast.get("option_data")
+    if opt:
+        print("\n 5. INSTITUTIONAL OPTION CHAIN & BUYER/SELLER POSITIONING:")
+        print(f"    - Expiry Tracked   : {opt.get('target_expiry')} | Max Pain Strike: {opt.get('max_pain'):,.0f}")
+        print(f"    - Put-Call Ratio   : PCR (OI) = {opt.get('pcr_oi'):.2f} | PCR (Vol) = {opt.get('pcr_volume'):.2f} | Chg OI PCR = {opt.get('pcr_chg_oi'):.2f}")
+        top_calls = opt.get("top_call_walls", [{}])
+        top_puts = opt.get("top_put_floors", [{}])
+        c_strike = top_calls[0].get("strike", 0)
+        c_oi = top_calls[0].get("oi", 0)
+        c_chg = top_calls[0].get("chg_oi", 0)
+        p_strike = top_puts[0].get("strike", 0)
+        p_oi = top_puts[0].get("oi", 0)
+        p_chg = top_puts[0].get("chg_oi", 0)
+        print(f"    - Major Call Wall  : {c_strike:,.0f} (Open Interest: {c_oi:,} | Intraday Chg: {c_chg:+,}) -> Institutional Ceiling")
+        print(f"    - Major Put Floor  : {p_strike:,.0f} (Open Interest: {p_oi:,} | Intraday Chg: {p_chg:+,}) -> Institutional Floor")
+        exp_opt = opt.get("expected_option_range", (0, 0))
+        print(f"    - Option Move Band : {exp_opt[0]:,.1f}  <--->  {exp_opt[1]:,.1f}  (ATM Straddle: ~{opt.get('atm_straddle_price', 0):,.1f} pts)")
+        print(f"    - Option Bias      : Score {opt.get('momentum_score'):+d}/2 [{opt.get('regime_label')}]")
+        print(f"    - Setup Summary    : {opt.get('positioning_summary')}")
+        if opt.get("signals"):
+            print("    - Key Signals      :")
+            for s in opt["signals"][:3]:
+                print(f"       * {s}")
+
+    print("\n 6. TRADER'S CHART SETUP & ACTION GUIDE (SIMPLE LANGUAGE):")
     print("    [WHAT LINES TO MARK ON YOUR CHART]:")
     if nr:
         print(f"    - RED LINE (Resistance R1) : Mark at {nr['price']:,.0f} (Zone: {nr['range'][0]:,.0f} to {nr['range'][1]:,.0f})")

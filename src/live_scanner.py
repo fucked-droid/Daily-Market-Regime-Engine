@@ -14,6 +14,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import urllib.request
 
+from src.option_data import (
+    fetch_nse_option_chain,
+    load_cached_option_chain,
+    analyze_option_chain,
+)
+
 REPO_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_DIR))
 
@@ -172,10 +178,11 @@ def evaluate_live_alerts(
     live_nifty: Dict[str, Any],
     forecast: Dict[str, Any],
     live_vix: Optional[Dict[str, Any]] = None,
+    option_analysis: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, str]]:
     """
     Generate actionable real-time trading alerts based on live price action
-    interacting with Support, Resistance, Range bounds, and VIX.
+    interacting with Support, Resistance, Range bounds, VIX, and Option Chain.
     """
     alerts = []
     price = live_nifty["price"]
@@ -266,6 +273,38 @@ def evaluate_live_alerts(
                 "message": f"VOLATILITY CRUSH: India VIX dropped {vix_chg:.1f}% to {vix_price:.2f}. Complacency / steady grind favored.",
             })
 
+    # 6. Institutional Option Chain & Buyer/Seller Alerts
+    if option_analysis:
+        c_wall = option_analysis.get("major_resistance_wall")
+        p_floor = option_analysis.get("major_support_floor")
+
+        if c_wall and abs(price - c_wall) <= 50:
+            alerts.append({
+                "type": "OPTION_WALL",
+                "level": "HIGH",
+                "message": f"INSTITUTIONAL CEILING: Spot ({price:,.2f}) approaching Call Seller Wall at {c_wall:,.0f}. Watch for heavy selling defense or short squeeze if broken.",
+            })
+        if p_floor and abs(price - p_floor) <= 50:
+            alerts.append({
+                "type": "OPTION_WALL",
+                "level": "HIGH",
+                "message": f"INSTITUTIONAL FLOOR: Spot ({price:,.2f}) near Put Seller Floor at {p_floor:,.0f}. High probability buyer defense bounce zone.",
+            })
+        for unw in option_analysis.get("call_unwinding", []):
+            if abs(price - unw["strike"]) <= 75 and unw["chg_oi"] < -5000:
+                alerts.append({
+                    "type": "SHORT_COVERING",
+                    "level": "MEDIUM",
+                    "message": f"SHORT COVERING SQUEEZE: Call unwinding at {unw['strike']:,.0f} ({unw['chg_oi']:,} OI). Sellers exiting, fueling bullish upside.",
+                })
+        for unw in option_analysis.get("put_unwinding", []):
+            if abs(price - unw["strike"]) <= 75 and unw["chg_oi"] < -5000:
+                alerts.append({
+                    "type": "LONG_UNWINDING",
+                    "level": "WARNING",
+                    "message": f"PUT UNWINDING SLIP: Put writers exiting at {unw['strike']:,.0f} ({unw['chg_oi']:,} OI). Buyer floor deteriorating.",
+                })
+
     return alerts
 
 
@@ -276,6 +315,7 @@ def render_live_screen(
     forecast: Dict[str, Any],
     market_status: Dict[str, Any],
     alerts: List[Dict[str, str]],
+    option_analysis: Optional[Dict[str, Any]] = None,
     iteration: int = 1,
 ):
     """Render real-time live market surveillance view."""
@@ -329,6 +369,20 @@ def render_live_screen(
             h_sign = "+" if hw["change_pct"] >= 0 else ""
             hw_line += f"[{hw['name']}: {hw['price']:,.1f} ({h_sign}{hw['change_pct']:.2f}%)]  "
         print(hw_line)
+        print("-" * 76)
+
+    # Institutional Option Chain & Positioning
+    if option_analysis:
+        print(" INSTITUTIONAL OPTION CHAIN & BUYER/SELLER POSITIONING:")
+        print(f"  - PCR Ratio (OI): {option_analysis.get('pcr_oi'):.2f} | Volume PCR: {option_analysis.get('pcr_volume'):.2f} | Max Pain: {option_analysis.get('max_pain'):,.0f}")
+        top_c = option_analysis.get("top_call_walls", [{}])[0]
+        top_p = option_analysis.get("top_put_floors", [{}])[0]
+        print(f"  - Call Ceiling  : {top_c.get('strike', 0):,.0f} (OI: {top_c.get('oi', 0):,} | Chg: {top_c.get('chg_oi', 0):+,}) -> Major Resistance")
+        print(f"  - Put Floor     : {top_p.get('strike', 0):,.0f} (OI: {top_p.get('oi', 0):,} | Chg: {top_p.get('chg_oi', 0):+,}) -> Major Support")
+        exp_opt = option_analysis.get("expected_option_range", (0, 0))
+        print(f"  - Implied Move  : {exp_opt[0]:,.1f}  <--->  {exp_opt[1]:,.1f} (ATM Straddle: ~{option_analysis.get('atm_straddle_price', 0):,.1f} pts)")
+        print(f"  - Option Bias   : Score {option_analysis.get('momentum_score'):+d}/2 [{option_analysis.get('regime_label')}]")
+        print(f"  - Positioning   : {option_analysis.get('positioning_summary')}")
         print("-" * 76)
 
     # Live Alerts
@@ -385,7 +439,10 @@ def run_live_market_loop(
             heavyweights = fetch_heavyweight_quotes()
 
             if live_nifty:
-                alerts = evaluate_live_alerts(live_nifty, forecast, live_vix)
+                opt_raw = fetch_nse_option_chain("NIFTY") or load_cached_option_chain()
+                option_analysis = analyze_option_chain(opt_raw, spot_price=live_nifty["price"]) if opt_raw else None
+
+                alerts = evaluate_live_alerts(live_nifty, forecast, live_vix, option_analysis=option_analysis)
                 render_live_screen(
                     live_nifty=live_nifty,
                     live_vix=live_vix,
@@ -393,6 +450,7 @@ def run_live_market_loop(
                     forecast=forecast,
                     market_status=market_status,
                     alerts=alerts,
+                    option_analysis=option_analysis,
                     iteration=iteration,
                 )
             else:
