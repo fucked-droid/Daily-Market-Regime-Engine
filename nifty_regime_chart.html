@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIFTY 50 Daily Market Regime Chart - 2026-11-04</title>
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.85);
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-bullish: #10b981;
+      --accent-bearish: #ef4444;
+      --accent-r1: #f43f5e;
+      --accent-s1: #10b981;
+      --accent-ceil: #f59e0b;
+      --accent-floor: #06b6d4;
+      --accent-wall: #ec4899;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 10;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-bullish {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-bullish);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .badge-bearish {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-bearish);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .metrics {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+    }
+    .metric-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .metric-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .metric-value {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: #1e293b;
+      color: var(--text-main);
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+    .btn-primary {
+      background: #2563eb;
+      border-color: #3b82f6;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+    #chart-wrapper {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+    }
+    #tv-chart {
+      width: 100%;
+      height: 100%;
+    }
+    .hud-card {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 18px;
+      z-index: 5;
+      max-width: 380px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .hud-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .level-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 5px;
+      align-items: center;
+    }
+    .level-color {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      margin-right: 6px;
+    }
+    .playbook-box {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+      font-size: 11px;
+      line-height: 1.45;
+      color: #cbd5e1;
+    }
+    .playbook-item {
+      margin-bottom: 4px;
+    }
+    /* Modal */
+    #pine-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 10px;
+      padding: 24px;
+      max-width: 620px;
+      width: 90%;
+      color: #f8fafc;
+    }
+    pre {
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+      margin: 12px 0;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h2 style="font-size: 18px; font-weight: 800;">NIFTY 50</h2>
+      <span class="badge badge-bullish">Bullish</span>
+      <span style="font-size: 13px; color: var(--text-muted);">As of: 2026-11-04</span>
+    </div>
+
+    <div class="metrics">
+      <div class="metric-item">
+        <span class="metric-label">Close</span>
+        <span class="metric-value">23,960.60</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Bias</span>
+        <span class="metric-value" style="color: var(--accent-bullish);">BULLISH (Upward Momentum Favored)</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">RSI(14)</span>
+        <span class="metric-value">68.5</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">ATR(14)</span>
+        <span class="metric-value">297.4 pts</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" onclick="openPineModal()">📋 Pine Script (TV)</button>
+      <a href="https://in.tradingview.com/chart/?symbol=NSE%3ANIFTY" target="_blank" class="btn">🚀 TradingView Live</a>
+      <a href="https://tv.dhan.co" target="_blank" class="btn">⚡ Dhan TV</a>
+      <button class="btn btn-primary" onclick="fitChart()">Reset Zoom</button>
+    </div>
+  </header>
+
+  <div id="chart-wrapper">
+    <div id="tv-chart"></div>
+
+    <div class="hud-card">
+      <div class="hud-title">Engine Projected Levels</div>
+      <div class="level-row">
+        <span><span class="level-color" style="background: var(--accent-r1);"></span>Resistance R1</span>
+        <strong style="color: var(--accent-r1);">24,393.53</strong>
+      </div>
+      <div class="level-row">
+        <span><span class="level-color" style="background: var(--accent-ceil);"></span>Dotted Top (Day High)</span>
+        <strong style="color: var(--accent-ceil);">24,257.99</strong>
+      </div>
+      <div class="level-row">
+        <span><span class="level-color" style="background: var(--accent-wall);"></span>Call Wall Ceiling</span>
+        <strong style="color: var(--accent-wall);">24,200.00</strong>
+      </div>
+      <div class="level-row">
+        <span><span class="level-color" style="background: #10b981;"></span>Put Floor Strike</span>
+        <strong style="color: #10b981;">23,800.00</strong>
+      </div>
+      <div class="level-row">
+        <span><span class="level-color" style="background: var(--accent-floor);"></span>Dotted Btm (Day Low)</span>
+        <strong style="color: var(--accent-floor);">23,663.21</strong>
+      </div>
+      <div class="level-row">
+        <span><span class="level-color" style="background: var(--accent-s1);"></span>Support S1</span>
+        <strong style="color: var(--accent-s1);">22,229.17</strong>
+      </div>
+
+      <div class="playbook-box">
+        <strong style="color: #38bdf8;">ACTION PLAYBOOK:</strong>
+        <div class="playbook-item">• <strong>Breakout BUY (Call):</strong> 15m candle close above 24,394 -> Targets: 24,258 / 24,797</div>
+        <div class="playbook-item">• <strong>Rejection SHORT (Put):</strong> Rejection at 24,394 -> Target: 23,961</div>
+        <div class="playbook-item">• <strong>Dip BUY (Call):</strong> Bounce off 23,663 / S1 -> Target: 23,961</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pine-modal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 8px;">TradingView Pine Script v5</h3>
+      <p style="font-size: 13px; color: #94a3b8;">Copy and paste this script directly into your TradingView Pine Editor to overlay these exact engine levels on your live TradingView charts.</p>
+      <pre id="pine-code">//@version=5
+indicator("Daily Market Regime Engine Levels [2026-11-04]", overlay=true)
+
+// --- REGIME ENGINE PREDICTED LEVELS ---
+r1_val      = input.float(24393.53, "Resistance R1 (Red)")
+s1_val      = input.float(22229.17, "Support S1 (Green)")
+ceil_val    = input.float(24257.99, "Day Ceiling (Dotted Top)")
+floor_val   = input.float(23663.21, "Day Floor (Dotted Bottom)")
+call_wall   = input.float(24200.00, "Major Call Wall (Pink)")
+put_wall    = input.float(23800.00, "Major Put Floor (Teal)")
+
+// Plot Horizontal Lines
+plot(r1_val > 0 ? r1_val : na, "Resistance R1", color=color.new(color.red, 10), linewidth=2)
+plot(s1_val > 0 ? s1_val : na, "Support S1", color=color.new(color.green, 10), linewidth=2)
+plot(ceil_val > 0 ? ceil_val : na, "Day Ceiling", color=color.new(color.orange, 10), linewidth=2, style=plot.style_circles)
+plot(floor_val > 0 ? floor_val : na, "Day Floor", color=color.new(color.aqua, 10), linewidth=2, style=plot.style_circles)
+plot(call_wall > 0 ? call_wall : na, "Call Wall", color=color.new(color.purple, 30), linewidth=1, style=plot.style_linebr)
+plot(put_wall > 0 ? put_wall : na, "Put Floor", color=color.new(color.teal, 30), linewidth=1, style=plot.style_linebr)
+
+// Plot Standard EMAs
+plot(ta.ema(close, 20), "EMA 20", color=color.yellow, linewidth=1)
+plot(ta.ema(close, 50), "EMA 50", color=color.orange, linewidth=1)
+plot(ta.ema(close, 200), "EMA 200", color=color.purple, linewidth=2)
+</pre>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn" onclick="copyPineScript()">Copy Script</button>
+        <button class="btn btn-primary" onclick="closePineModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chartContainer = document.getElementById('tv-chart');
+    const chart = LightweightCharts.createChart(chartContainer, {
+      width: chartContainer.clientWidth,
+      height: chartContainer.clientHeight,
+      layout: {
+        background: { color: '#0f172a' },
+        textColor: '#94a3b8',
+      },
+      grid: {
+        vertLines: { color: '#1e293b' },
+        horzLines: { color: '#1e293b' },
+      },
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+      },
+      rightPriceScale: {
+        borderColor: '#334155',
+      },
+      timeScale: {
+        borderColor: '#334155',
+        timeVisible: true,
+      },
+    });
+
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#10b981',
+      downColor: '#ef4444',
+      borderVisible: false,
+      wickUpColor: '#10b981',
+      wickDownColor: '#ef4444',
+    });
+
+    const candles = [{"time": "2026-01-12", "open": 25669.05078125, "high": 25813.150390625, "low": 25473.400390625, "close": 25790.25}, {"time": "2026-01-13", "open": 25897.349609375, "high": 25899.80078125, "low": 25603.30078125, "close": 25732.30078125}, {"time": "2026-01-14", "open": 25648.55078125, "high": 25791.75, "low": 25603.94921875, "close": 25665.599609375}, {"time": "2026-01-16", "open": 25696.05078125, "high": 25873.5, "low": 25662.400390625, "close": 25694.349609375}, {"time": "2026-01-19", "open": 25653.099609375, "high": 25653.30078125, "low": 25494.349609375, "close": 25585.5}, {"time": "2026-01-20", "open": 25580.30078125, "high": 25585.0, "low": 25171.349609375, "close": 25232.5}, {"time": "2026-01-21", "open": 25141.0, "high": 25300.94921875, "low": 24919.80078125, "close": 25157.5}, {"time": "2026-01-22", "open": 25344.150390625, "high": 25435.75, "low": 25168.5, "close": 25289.900390625}, {"time": "2026-01-23", "open": 25344.599609375, "high": 25347.94921875, "low": 25025.30078125, "close": 25048.650390625}, {"time": "2026-01-27", "open": 25063.349609375, "high": 25246.650390625, "low": 24932.55078125, "close": 25175.400390625}, {"time": "2026-01-28", "open": 25258.849609375, "high": 25372.099609375, "low": 25187.650390625, "close": 25342.75}, {"time": "2026-01-29", "open": 25345.0, "high": 25458.150390625, "low": 25159.80078125, "close": 25418.900390625}, {"time": "2026-01-30", "open": 25247.55078125, "high": 25370.69921875, "low": 25213.650390625, "close": 25320.650390625}, {"time": "2026-02-02", "open": 24796.5, "high": 25108.099609375, "low": 24679.400390625, "close": 25088.400390625}, {"time": "2026-02-03", "open": 26308.05078125, "high": 26341.19921875, "low": 25641.30078125, "close": 25727.55078125}, {"time": "2026-02-04", "open": 25675.05078125, "high": 25818.55078125, "low": 25563.94921875, "close": 25776.0}, {"time": "2026-02-05", "open": 25755.900390625, "high": 25757.650390625, "low": 25579.5, "close": 25642.80078125}, {"time": "2026-02-06", "open": 25605.80078125, "high": 25703.94921875, "low": 25491.900390625, "close": 25693.69921875}, {"time": "2026-02-09", "open": 25888.69921875, "high": 25922.25, "low": 25780.900390625, "close": 25867.30078125}, {"time": "2026-02-10", "open": 25922.650390625, "high": 25989.44921875, "low": 25870.44921875, "close": 25935.150390625}, {"time": "2026-02-11", "open": 25997.44921875, "high": 26009.400390625, "low": 25899.80078125, "close": 25953.849609375}, {"time": "2026-02-12", "open": 25906.69921875, "high": 25906.69921875, "low": 25752.400390625, "close": 25807.19921875}, {"time": "2026-02-13", "open": 25571.150390625, "high": 25630.349609375, "low": 25444.30078125, "close": 25471.099609375}, {"time": "2026-02-16", "open": 25423.599609375, "high": 25697.0, "low": 25372.69921875, "close": 25682.75}, {"time": "2026-02-17", "open": 25637.94921875, "high": 25764.400390625, "low": 25570.30078125, "close": 25725.400390625}, {"time": "2026-02-18", "open": 25752.650390625, "high": 25828.05078125, "low": 25645.150390625, "close": 25819.349609375}, {"time": "2026-02-19", "open": 25873.349609375, "high": 25885.30078125, "low": 25388.75, "close": 25454.349609375}, {"time": "2026-02-20", "open": 25406.55078125, "high": 25663.55078125, "low": 25379.75, "close": 25571.25}, {"time": "2026-02-23", "open": 25678.400390625, "high": 25771.44921875, "low": 25609.349609375, "close": 25713.0}, {"time": "2026-02-24", "open": 25641.80078125, "high": 25641.80078125, "low": 25327.599609375, "close": 25424.650390625}, {"time": "2026-02-25", "open": 25512.599609375, "high": 25652.599609375, "low": 25428.19921875, "close": 25482.5}, {"time": "2026-02-26", "open": 25556.30078125, "high": 25572.94921875, "low": 25400.94921875, "close": 25496.55078125}, {"time": "2026-02-27", "open": 25459.849609375, "high": 25476.400390625, "low": 25141.30078125, "close": 25178.650390625}, {"time": "2026-03-02", "open": 24659.25, "high": 24989.349609375, "low": 24603.5, "close": 24865.69921875}, {"time": "2026-03-04", "open": 24388.80078125, "high": 24602.44921875, "low": 24305.400390625, "close": 24480.5}, {"time": "2026-03-05", "open": 24615.94921875, "high": 24854.19921875, "low": 24529.400390625, "close": 24765.900390625}, {"time": "2026-03-06", "open": 24656.400390625, "high": 24700.900390625, "low": 24415.75, "close": 24450.44921875}, {"time": "2026-03-09", "open": 23868.05078125, "high": 24078.150390625, "low": 23697.80078125, "close": 24028.05078125}, {"time": "2026-03-10", "open": 24280.80078125, "high": 24303.80078125, "low": 24079.94921875, "close": 24261.599609375}, {"time": "2026-03-11", "open": 24231.849609375, "high": 24299.0, "low": 23834.30078125, "close": 23866.849609375}, {"time": "2026-03-12", "open": 23674.849609375, "high": 23833.150390625, "low": 23556.30078125, "close": 23639.150390625}, {"time": "2026-03-13", "open": 23462.5, "high": 23492.400390625, "low": 23112.0, "close": 23151.099609375}, {"time": "2026-03-16", "open": 23116.099609375, "high": 23502.0, "low": 22955.25, "close": 23408.80078125}, {"time": "2026-03-17", "open": 23493.19921875, "high": 23656.80078125, "low": 23346.599609375, "close": 23581.150390625}, {"time": "2026-03-18", "open": 23632.900390625, "high": 23862.25, "low": 23618.44921875, "close": 23777.80078125}, {"time": "2026-03-19", "open": 23197.75, "high": 23378.69921875, "low": 22930.349609375, "close": 23002.150390625}, {"time": "2026-03-20", "open": 23110.150390625, "high": 23345.150390625, "low": 23067.599609375, "close": 23114.5}, {"time": "2026-03-23", "open": 22824.349609375, "high": 22851.69921875, "low": 22471.25, "close": 22512.650390625}, {"time": "2026-03-24", "open": 22878.44921875, "high": 23057.30078125, "low": 22624.19921875, "close": 22912.400390625}, {"time": "2026-03-25", "open": 23064.400390625, "high": 23465.349609375, "low": 23063.19921875, "close": 23306.44921875}, {"time": "2026-03-27", "open": 23173.55078125, "high": 23186.099609375, "low": 22804.55078125, "close": 22819.599609375}, {"time": "2026-03-30", "open": 22549.650390625, "high": 22714.099609375, "low": 22283.849609375, "close": 22331.400390625}, {"time": "2026-04-01", "open": 22899.0, "high": 22941.30078125, "low": 22618.599609375, "close": 22679.400390625}, {"time": "2026-04-02", "open": 22383.400390625, "high": 22782.30078125, "low": 22182.55078125, "close": 22713.099609375}, {"time": "2026-04-06", "open": 22780.30078125, "high": 22998.349609375, "low": 22542.94921875, "close": 22968.25}, {"time": "2026-04-07", "open": 22838.69921875, "high": 23153.849609375, "low": 22719.30078125, "close": 23123.650390625}, {"time": "2026-04-08", "open": 23855.150390625, "high": 24025.150390625, "low": 23828.5, "close": 23997.349609375}, {"time": "2026-04-09", "open": 23909.05078125, "high": 23990.75, "low": 23682.80078125, "close": 23775.099609375}, {"time": "2026-04-10", "open": 23880.55078125, "high": 24074.05078125, "low": 23856.349609375, "close": 24050.599609375}, {"time": "2026-04-13", "open": 23589.599609375, "high": 23907.400390625, "low": 23555.599609375, "close": 23842.650390625}, {"time": "2026-04-15", "open": 24163.80078125, "high": 24280.900390625, "low": 24145.80078125, "close": 24231.30078125}, {"time": "2026-04-16", "open": 24385.19921875, "high": 24400.94921875, "low": 24102.80078125, "close": 24196.75}, {"time": "2026-04-17", "open": 24165.900390625, "high": 24371.900390625, "low": 24096.05078125, "close": 24353.55078125}, {"time": "2026-04-20", "open": 24391.5, "high": 24480.650390625, "low": 24241.25, "close": 24364.849609375}, {"time": "2026-04-21", "open": 24374.55078125, "high": 24601.69921875, "low": 24354.900390625, "close": 24576.599609375}, {"time": "2026-04-22", "open": 24470.849609375, "high": 24515.94921875, "low": 24352.900390625, "close": 24378.099609375}, {"time": "2026-04-23", "open": 24202.349609375, "high": 24310.19921875, "low": 24134.80078125, "close": 24173.05078125}, {"time": "2026-04-24", "open": 24100.55078125, "high": 24206.0, "low": 23813.650390625, "close": 23897.94921875}, {"time": "2026-04-27", "open": 23945.44921875, "high": 24130.69921875, "low": 23936.19921875, "close": 24092.69921875}, {"time": "2026-04-28", "open": 24049.900390625, "high": 24181.80078125, "low": 23957.05078125, "close": 23995.69921875}, {"time": "2026-04-29", "open": 24096.900390625, "high": 24334.69921875, "low": 24059.94921875, "close": 24177.650390625}, {"time": "2026-04-30", "open": 23996.94921875, "high": 24087.44921875, "low": 23796.849609375, "close": 23997.55078125}, {"time": "2026-05-04", "open": 24063.55078125, "high": 24290.19921875, "low": 24004.75, "close": 24119.30078125}, {"time": "2026-05-05", "open": 24052.599609375, "high": 24081.69921875, "low": 23882.05078125, "close": 24032.80078125}, {"time": "2026-05-06", "open": 24171.0, "high": 24356.5, "low": 23997.900390625, "close": 24330.94921875}, {"time": "2026-05-07", "open": 24398.5, "high": 24482.099609375, "low": 24284.0, "close": 24326.650390625}, {"time": "2026-05-08", "open": 24233.650390625, "high": 24253.80078125, "low": 24126.650390625, "close": 24176.150390625}, {"time": "2026-05-11", "open": 23970.099609375, "high": 23997.44921875, "low": 23799.099609375, "close": 23815.849609375}, {"time": "2026-05-12", "open": 23722.599609375, "high": 23757.55078125, "low": 23348.400390625, "close": 23379.55078125}, {"time": "2026-05-13", "open": 23362.44921875, "high": 23582.94921875, "low": 23262.55078125, "close": 23412.599609375}, {"time": "2026-05-14", "open": 23530.25, "high": 23777.19921875, "low": 23426.55078125, "close": 23689.599609375}, {"time": "2026-05-15", "open": 23731.400390625, "high": 23839.30078125, "low": 23610.30078125, "close": 23643.5}, {"time": "2026-05-18", "open": 23482.19921875, "high": 23695.650390625, "low": 23317.099609375, "close": 23649.94921875}, {"time": "2026-05-19", "open": 23675.30078125, "high": 23782.30078125, "low": 23587.19921875, "close": 23618.0}, {"time": "2026-05-20", "open": 23457.25, "high": 23690.900390625, "low": 23397.30078125, "close": 23659.0}, {"time": "2026-05-21", "open": 23830.05078125, "high": 23859.900390625, "low": 23596.599609375, "close": 23654.69921875}, {"time": "2026-05-22", "open": 23671.19921875, "high": 23835.650390625, "low": 23671.0, "close": 23719.30078125}, {"time": "2026-05-25", "open": 23940.25, "high": 24054.44921875, "low": 23922.849609375, "close": 24031.69921875}, {"time": "2026-05-26", "open": 24004.099609375, "high": 24089.80078125, "low": 23885.44921875, "close": 23913.69921875}, {"time": "2026-05-27", "open": 23880.349609375, "high": 23983.19921875, "low": 23858.25, "close": 23907.150390625}, {"time": "2026-05-29", "open": 23902.150390625, "high": 24002.80078125, "low": 23484.75, "close": 23547.75}, {"time": "2026-06-01", "open": 23654.5, "high": 23733.69921875, "low": 23357.94921875, "close": 23382.599609375}, {"time": "2026-06-02", "open": 23229.150390625, "high": 23556.94921875, "low": 23229.150390625, "close": 23483.55078125}, {"time": "2026-06-03", "open": 23415.94921875, "high": 23459.650390625, "low": 23151.5, "close": 23405.599609375}, {"time": "2026-06-04", "open": 23282.44921875, "high": 23465.30078125, "low": 23247.30078125, "close": 23416.55078125}, {"time": "2026-06-05", "open": 23478.94921875, "high": 23516.349609375, "low": 23282.650390625, "close": 23366.69921875}, {"time": "2026-06-08", "open": 23080.69921875, "high": 23267.30078125, "low": 23070.150390625, "close": 23123.0}, {"time": "2026-06-09", "open": 23259.05078125, "high": 23279.400390625, "low": 23104.44921875, "close": 23242.099609375}, {"time": "2026-06-10", "open": 23233.94921875, "high": 23425.349609375, "low": 23184.599609375, "close": 23214.94921875}, {"time": "2026-06-11", "open": 23104.400390625, "high": 23327.44921875, "low": 23072.05078125, "close": 23161.599609375}, {"time": "2026-06-12", "open": 23412.55078125, "high": 23645.349609375, "low": 23313.900390625, "close": 23622.900390625}, {"time": "2026-06-15", "open": 23984.849609375, "high": 24011.400390625, "low": 23817.80078125, "close": 23853.900390625}, {"time": "2026-06-16", "open": 23923.900390625, "high": 24002.599609375, "low": 23888.19921875, "close": 23989.150390625}, {"time": "2026-06-17", "open": 24044.5, "high": 24108.19921875, "low": 23969.69921875, "close": 24085.69921875}, {"time": "2026-06-18", "open": 24073.80078125, "high": 24189.25, "low": 24036.94921875, "close": 24168.0}, {"time": "2026-06-19", "open": 23991.19921875, "high": 24047.19921875, "low": 23901.900390625, "close": 24013.099609375}, {"time": "2026-06-22", "open": 24106.599609375, "high": 24168.05078125, "low": 24073.150390625, "close": 24102.900390625}, {"time": "2026-06-23", "open": 24071.30078125, "high": 24135.5, "low": 23784.94921875, "close": 23824.099609375}, {"time": "2026-06-24", "open": 23795.80078125, "high": 24090.05078125, "low": 23789.25, "close": 24021.650390625}, {"time": "2026-06-25", "open": 24125.849609375, "high": 24261.599609375, "low": 24039.0, "close": 24056.0}, {"time": "2026-06-29", "open": 24061.75, "high": 24120.0, "low": 23924.55078125, "close": 23946.25}, {"time": "2026-06-30", "open": 24032.05078125, "high": 24035.55078125, "low": 23829.19921875, "close": 23865.75}, {"time": "2026-07-01", "open": 23897.650390625, "high": 24049.900390625, "low": 23895.099609375, "close": 24005.849609375}, {"time": "2026-07-02", "open": 24062.19921875, "high": 24194.55078125, "low": 24058.80078125, "close": 24175.69921875}, {"time": "2026-07-03", "open": 24375.650390625, "high": 24378.150390625, "low": 24252.349609375, "close": 24270.849609375}, {"time": "2026-07-06", "open": 24306.849609375, "high": 24458.650390625, "low": 24287.099609375, "close": 24430.349609375}, {"time": "2026-07-07", "open": 24464.44921875, "high": 24530.900390625, "low": 24348.94921875, "close": 24398.69921875}, {"time": "2026-07-08", "open": 24259.55078125, "high": 24300.0, "low": 23805.19921875, "close": 23882.05078125}, {"time": "2026-07-09", "open": 23928.94921875, "high": 24134.69921875, "low": 23925.69921875, "close": 23962.80078125}, {"time": "2026-07-10", "open": 24124.69921875, "high": 24228.44921875, "low": 24120.349609375, "close": 24206.900390625}, {"time": "2026-07-13", "open": 24039.400390625, "high": 24259.80078125, "low": 24000.19921875, "close": 24211.0}, {"time": "2026-07-14", "open": 24068.0, "high": 24157.099609375, "low": 24023.69921875, "close": 24052.05078125}, {"time": "2026-07-15", "open": 24085.849609375, "high": 24220.349609375, "low": 24010.55078125, "close": 24078.5}, {"time": "2026-07-16", "open": 24142.099609375, "high": 24186.5, "low": 24050.0, "close": 24072.75}, {"time": "2026-07-17", "open": 24127.599609375, "high": 24367.30078125, "low": 24099.05078125, "close": 24334.30078125}, {"time": "2026-07-20", "open": 24190.05078125, "high": 24266.099609375, "low": 24135.849609375, "close": 24238.5}, {"time": "2026-07-21", "open": 24216.05078125, "high": 24262.19921875, "low": 24135.650390625, "close": 24187.69921875}, {"time": "2026-07-22", "open": 24150.44921875, "high": 24166.30078125, "low": 23961.400390625, "close": 23996.25}, {"time": "2026-07-23", "open": 23904.80078125, "high": 23990.75, "low": 23807.19921875, "close": 23869.599609375}, {"time": "2026-07-24", "open": 23666.349609375, "high": 23823.599609375, "low": 23606.30078125, "close": 23767.44921875}, {"time": "2026-07-27", "open": 23928.400390625, "high": 24011.599609375, "low": 23891.55078125, "close": 23995.94921875}, {"time": "2026-07-28", "open": 23971.25, "high": 24041.150390625, "low": 23954.599609375, "close": 23985.349609375}, {"time": "2026-07-29", "open": 24176.650390625, "high": 24283.55078125, "low": 24136.75, "close": 24250.19921875}, {"time": "2026-07-30", "open": 24249.55078125, "high": 24342.94921875, "low": 24187.099609375, "close": 24317.150390625}, {"time": "2026-07-31", "open": 24361.44921875, "high": 24429.400390625, "low": 24299.69921875, "close": 24383.599609375}, {"time": "2026-08-03", "open": 24572.69921875, "high": 24774.30078125, "low": 24515.150390625, "close": 24774.30078125}, {"time": "2026-08-04", "open": 24703.900390625, "high": 24703.900390625, "low": 24427.94921875, "close": 24614.900390625}, {"time": "2026-08-05", "open": 24669.19921875, "high": 24677.599609375, "low": 24497.94921875, "close": 24624.650390625}, {"time": "2026-08-06", "open": 24641.0, "high": 24677.05078125, "low": 24604.150390625, "close": 24636.0}, {"time": "2026-08-07", "open": 24538.900390625, "high": 24630.400390625, "low": 24522.75, "close": 24570.650390625}, {"time": "2026-08-10", "open": 24581.25, "high": 24620.94921875, "low": 24511.099609375, "close": 24583.80078125}, {"time": "2026-08-11", "open": 24575.099609375, "high": 24576.849609375, "low": 24429.25, "close": 24471.69921875}, {"time": "2026-08-12", "open": 24472.44921875, "high": 24473.30078125, "low": 24265.94921875, "close": 24435.94921875}, {"time": "2026-08-13", "open": 24431.599609375, "high": 24431.599609375, "low": 24311.400390625, "close": 24395.849609375}, {"time": "2026-08-14", "open": 24361.900390625, "high": 24405.19921875, "low": 24296.80078125, "close": 24366.0}, {"time": "2026-08-17", "open": 24343.44921875, "high": 24360.099609375, "low": 24226.94921875, "close": 24287.650390625}, {"time": "2026-08-18", "open": 24223.849609375, "high": 24269.650390625, "low": 24154.900390625, "close": 24154.900390625}, {"time": "2026-08-19", "open": 24152.05078125, "high": 24172.849609375, "low": 24025.650390625, "close": 24078.30078125}, {"time": "2026-08-20", "open": 24225.44921875, "high": 24265.150390625, "low": 24184.55078125, "close": 24231.849609375}, {"time": "2026-08-21", "open": 24284.05078125, "high": 24284.05078125, "low": 24206.80078125, "close": 24252.0}, {"time": "2026-08-24", "open": 24285.05078125, "high": 24313.0, "low": 24144.30078125, "close": 24219.05078125}, {"time": "2026-08-25", "open": 24175.75, "high": 24334.55078125, "low": 24115.44921875, "close": 24334.55078125}, {"time": "2026-08-26", "open": 24341.94921875, "high": 24378.599609375, "low": 24207.75, "close": 24207.75}, {"time": "2026-08-27", "open": 24277.599609375, "high": 24297.44921875, "low": 24090.849609375, "close": 24090.849609375}, {"time": "2026-08-28", "open": 24122.599609375, "high": 24188.30078125, "low": 24076.849609375, "close": 24175.650390625}, {"time": "2026-08-31", "open": 24117.55078125, "high": 24128.69921875, "low": 23993.599609375, "close": 24080.400390625}, {"time": "2026-09-01", "open": 24077.55078125, "high": 24143.150390625, "low": 23952.55078125, "close": 24055.80078125}, {"time": "2026-09-02", "open": 23858.0, "high": 23914.44921875, "low": 23786.80078125, "close": 23914.44921875}, {"time": "2026-09-03", "open": 23997.94921875, "high": 24025.400390625, "low": 23873.44921875, "close": 23873.44921875}, {"time": "2026-09-04", "open": 23910.900390625, "high": 24005.75, "low": 23895.849609375, "close": 23897.69921875}, {"time": "2026-09-07", "open": 23883.150390625, "high": 23890.0, "low": 23737.900390625, "close": 23779.150390625}, {"time": "2026-09-08", "open": 23743.099609375, "high": 23758.94921875, "low": 23623.099609375, "close": 23635.099609375}, {"time": "2026-09-09", "open": 23522.05078125, "high": 23571.55078125, "low": 23431.5, "close": 23431.5}, {"time": "2026-09-10", "open": 23446.599609375, "high": 23494.94921875, "low": 23380.099609375, "close": 23477.80078125}, {"time": "2026-09-11", "open": 23270.30078125, "high": 23448.099609375, "low": 23231.400390625, "close": 23398.099609375}, {"time": "2026-09-15", "open": 23576.150390625, "high": 23592.849609375, "low": 23118.599609375, "close": 23118.599609375}, {"time": "2026-09-16", "open": 23201.599609375, "high": 23284.75, "low": 23116.099609375, "close": 23217.599609375}, {"time": "2026-09-17", "open": 23195.25, "high": 23363.55078125, "low": 23193.650390625, "close": 23270.599609375}, {"time": "2026-09-18", "open": 23334.69921875, "high": 23389.150390625, "low": 23286.599609375, "close": 23346.400390625}, {"time": "2026-09-21", "open": 23330.19921875, "high": 23466.80078125, "low": 23314.80078125, "close": 23414.30078125}, {"time": "2026-09-22", "open": 23454.05078125, "high": 23489.0, "low": 23285.75, "close": 23329.0}, {"time": "2026-09-23", "open": 23352.150390625, "high": 23466.900390625, "low": 23349.55078125, "close": 23446.80078125}, {"time": "2026-09-24", "open": 23221.80078125, "high": 23281.94921875, "low": 23046.150390625, "close": 23063.099609375}, {"time": "2026-09-25", "open": 23035.0, "high": 23162.69921875, "low": 23020.94921875, "close": 23140.5}, {"time": "2026-09-28", "open": 23064.900390625, "high": 23080.25, "low": 22762.19921875, "close": 22780.25}, {"time": "2026-09-29", "open": 22732.44921875, "high": 22753.25, "low": 22569.650390625, "close": 22716.19921875}, {"time": "2026-09-30", "open": 22665.0, "high": 22809.349609375, "low": 22595.19921875, "close": 22620.44921875}, {"time": "2026-10-01", "open": 22543.69921875, "high": 22610.599609375, "low": 22217.30078125, "close": 22421.94921875}, {"time": "2026-10-05", "open": 22532.400390625, "high": 22621.80078125, "low": 22397.099609375, "close": 22555.75}, {"time": "2026-10-06", "open": 22603.25, "high": 22776.099609375, "low": 22561.599609375, "close": 22776.099609375}, {"time": "2026-10-07", "open": 22690.44921875, "high": 22717.650390625, "low": 22546.30078125, "close": 22603.05078125}, {"time": "2026-10-08", "open": 22599.05078125, "high": 22599.05078125, "low": 22179.900390625, "close": 22231.80078125}, {"time": "2026-10-09", "open": 22314.94921875, "high": 22580.75, "low": 22294.75, "close": 22520.44921875}, {"time": "2026-10-12", "open": 22593.19921875, "high": 22651.099609375, "low": 22304.44921875, "close": 22363.349609375}, {"time": "2026-10-13", "open": 22364.150390625, "high": 22721.94921875, "low": 22288.44921875, "close": 22721.94921875}, {"time": "2026-10-14", "open": 22715.75, "high": 22757.94921875, "low": 22558.94921875, "close": 22622.69921875}, {"time": "2026-10-15", "open": 22671.30078125, "high": 23056.400390625, "low": 22637.400390625, "close": 22997.349609375}, {"time": "2026-10-16", "open": 23065.099609375, "high": 23149.849609375, "low": 22913.80078125, "close": 23146.150390625}, {"time": "2026-10-19", "open": 23150.849609375, "high": 23175.25, "low": 22845.0, "close": 22888.94921875}, {"time": "2026-10-21", "open": 23016.0, "high": 23120.900390625, "low": 22649.900390625, "close": 22811.349609375}, {"time": "2026-10-22", "open": 22687.75, "high": 22785.0, "low": 22554.849609375, "close": 22687.650390625}, {"time": "2026-10-23", "open": 22742.19921875, "high": 22787.25, "low": 22372.0, "close": 22600.0}, {"time": "2026-10-26", "open": 22524.400390625, "high": 22753.19921875, "low": 22387.349609375, "close": 22753.19921875}, {"time": "2026-10-27", "open": 22708.80078125, "high": 22829.75, "low": 22636.849609375, "close": 22749.75}, {"time": "2026-10-28", "open": 22678.0, "high": 22778.05078125, "low": 22497.69921875, "close": 22698.849609375}, {"time": "2026-10-29", "open": 22690.650390625, "high": 22961.94921875, "low": 22656.75, "close": 22936.75}, {"time": "2026-10-30", "open": 22964.5, "high": 23118.099609375, "low": 22905.099609375, "close": 23053.099609375}, {"time": "2026-11-02", "open": 23222.30078125, "high": 23440.80078125, "low": 23207.05078125, "close": 23440.80078125}, {"time": "2026-11-03", "open": 23582.25, "high": 23810.849609375, "low": 23482.80078125, "close": 23810.849609375}, {"time": "2026-11-04", "open": 23742.25, "high": 23960.599609375, "low": 23696.150390625, "close": 23960.599609375}];
+    candleSeries.setData(candles);
+
+    // EMAs
+    const ema20Series = chart.addLineSeries({ color: '#facc15', lineWidth: 1, title: 'EMA 20' });
+    ema20Series.setData([{"time": "2026-01-12", "value": 26003.54260337393}, {"time": "2026-01-13", "value": 25977.71004888594}, {"time": "2026-01-14", "value": 25947.985245122993}, {"time": "2026-01-16", "value": 25923.829470289853}, {"time": "2026-01-19", "value": 25891.607615976533}, {"time": "2026-01-20", "value": 25828.835462074003}, {"time": "2026-01-21", "value": 25764.898751400287}, {"time": "2026-01-22", "value": 25719.66081227883}, {"time": "2026-01-23", "value": 25655.75505783561}, {"time": "2026-01-27", "value": 25610.00699429174}, {"time": "2026-01-28", "value": 25584.553947216336}, {"time": "2026-01-29", "value": 25568.777418017162}, {"time": "2026-01-30", "value": 25545.14627255124}, {"time": "2026-02-02", "value": 25501.64666474874}, {"time": "2026-02-03", "value": 25523.161342510764}, {"time": "2026-02-04", "value": 25547.241214652597}, {"time": "2026-02-05", "value": 25556.342125757114}, {"time": "2026-02-06", "value": 25569.423753661198}, {"time": "2026-02-09", "value": 25597.79299438394}, {"time": "2026-02-10", "value": 25629.922270216422}, {"time": "2026-02-11", "value": 25660.772492993427}, {"time": "2026-02-12", "value": 25674.717895446433}, {"time": "2026-02-13", "value": 25655.325677725345}, {"time": "2026-02-16", "value": 25657.93751794198}, {"time": "2026-02-17", "value": 25664.362553435603}, {"time": "2026-02-18", "value": 25679.12322542983}, {"time": "2026-02-19", "value": 25657.71621437699}, {"time": "2026-02-20", "value": 25649.481336817276}, {"time": "2026-02-23", "value": 25655.53073331087}, {"time": "2026-02-24", "value": 25633.542129245547}, {"time": "2026-02-25", "value": 25619.157164555498}, {"time": "2026-02-26", "value": 25607.48036614545}, {"time": "2026-02-27", "value": 25566.63941609588}, {"time": "2026-03-02", "value": 25499.883206824845}, {"time": "2026-03-04", "value": 25402.799091889145}, {"time": "2026-03-05", "value": 25342.14207272113}, {"time": "2026-03-06", "value": 25257.2189437715}, {"time": "2026-03-09", "value": 25140.15530924564}, {"time": "2026-03-10", "value": 25056.48333782939}, {"time": "2026-03-11", "value": 24943.1848875004}, {"time": "2026-03-12", "value": 24818.99112589322}, {"time": "2026-03-13", "value": 24660.144314796245}, {"time": "2026-03-16", "value": 24540.968740172793}, {"time": "2026-03-17", "value": 24449.55746878729}, {"time": "2026-03-18", "value": 24385.580641402787}, {"time": "2026-03-19", "value": 24253.82537942395}, {"time": "2026-03-20", "value": 24145.31820043119}, {"time": "2026-03-23", "value": 23989.826028068695}, {"time": "2026-03-24", "value": 23887.214062597868}, {"time": "2026-03-25", "value": 23831.903125088545}, {"time": "2026-03-27", "value": 23735.493266449157}, {"time": "2026-03-30", "value": 23601.770135418286}, {"time": "2026-04-01", "value": 23513.925397818926}, {"time": "2026-04-02", "value": 23437.65627510998}, {"time": "2026-04-06", "value": 23392.950915575697}, {"time": "2026-04-07", "value": 23367.303246532774}, {"time": "2026-04-08", "value": 23427.307662041556}, {"time": "2026-04-09", "value": 23460.430704644743}, {"time": "2026-04-10", "value": 23516.637267000006}, {"time": "2026-04-13", "value": 23547.686135916672}, {"time": "2026-04-15", "value": 23612.792292615082}, {"time": "2026-04-16", "value": 23668.407312366027}, {"time": "2026-04-17", "value": 23733.65907130736}, {"time": "2026-04-20", "value": 23793.77245588523}, {"time": "2026-04-21", "value": 23868.327422884257}, {"time": "2026-04-22", "value": 23916.877154930993}, {"time": "2026-04-23", "value": 23941.27464315185}, {"time": "2026-04-24", "value": 23937.148412256436}, {"time": "2026-04-27", "value": 23951.962774779633}, {"time": "2026-04-28", "value": 23956.12815039586}, {"time": "2026-04-29", "value": 23977.22550660816}, {"time": "2026-04-30", "value": 23979.16124705024}, {"time": "2026-05-04", "value": 23992.50786935498}, {"time": "2026-05-05", "value": 23996.345289535457}, {"time": "2026-05-06", "value": 24028.212330413033}, {"time": "2026-05-07", "value": 24056.63500281417}, {"time": "2026-05-08", "value": 24068.01742070092}, {"time": "2026-05-11", "value": 24044.00143866988}, {"time": "2026-05-12", "value": 23980.72042367751}, {"time": "2026-05-13", "value": 23926.613679458227}, {"time": "2026-05-14", "value": 23904.040910878874}, {"time": "2026-05-15", "value": 23879.227490795172}, {"time": "2026-05-18", "value": 23857.391464886106}, {"time": "2026-05-19", "value": 23834.592277754095}, {"time": "2026-05-20", "value": 23817.869203682276}, {"time": "2026-05-21", "value": 23802.329205117298}, {"time": "2026-05-22", "value": 23794.421736177555}, {"time": "2026-05-25", "value": 23817.019591660646}, {"time": "2026-05-26", "value": 23826.227175192966}, {"time": "2026-05-27", "value": 23833.934148091255}, {"time": "2026-05-29", "value": 23806.678514939704}, {"time": "2026-06-01", "value": 23766.290047743067}, {"time": "2026-06-02", "value": 23739.36249855325}, {"time": "2026-06-03", "value": 23707.57555672675}, {"time": "2026-06-04", "value": 23679.85891144325}, {"time": "2026-06-05", "value": 23650.034178805796}, {"time": "2026-06-08", "value": 23599.84044749096}, {"time": "2026-06-09", "value": 23565.76989147992}, {"time": "2026-06-10", "value": 23532.358398838973}, {"time": "2026-06-11", "value": 23497.048037937642}, {"time": "2026-06-12", "value": 23509.03397628882}, {"time": "2026-06-15", "value": 23541.87839670179}, {"time": "2026-06-16", "value": 23584.475729456382}, {"time": "2026-06-17", "value": 23632.2112998653}, {"time": "2026-06-18", "value": 23683.238795116224}, {"time": "2026-06-19", "value": 23714.654110759915}, {"time": "2026-06-22", "value": 23751.629946937544}, {"time": "2026-06-23", "value": 23758.531819550633}, {"time": "2026-06-24", "value": 23783.590731081527}, {"time": "2026-06-25", "value": 23809.534470978524}, {"time": "2026-06-29", "value": 23822.554997551997}, {"time": "2026-06-30", "value": 23826.66880730895}, {"time": "2026-07-01", "value": 23843.733645600958}, {"time": "2026-07-02", "value": 23875.349414472294}, {"time": "2026-07-03", "value": 23913.016099701123}, {"time": "2026-07-06", "value": 23962.2859577653}, {"time": "2026-07-07", "value": 24003.849125478126}, {"time": "2026-07-08", "value": 23992.249283170684}, {"time": "2026-07-09", "value": 23989.444663940143}, {"time": "2026-07-10", "value": 24010.154733148225}, {"time": "2026-07-13", "value": 24029.282853800774}, {"time": "2026-07-14", "value": 24031.451227843558}, {"time": "2026-07-15", "value": 24035.93206328703}, {"time": "2026-07-16", "value": 24039.43853345017}, {"time": "2026-07-17", "value": 24067.520652288247}, {"time": "2026-07-20", "value": 24083.80439968937}, {"time": "2026-07-21", "value": 24093.69914436181}, {"time": "2026-07-22", "value": 24084.418273470208}, {"time": "2026-07-23", "value": 24063.959353080187}, {"time": "2026-07-24", "value": 24035.72029266779}, {"time": "2026-07-27", "value": 24031.932571342284}, {"time": "2026-07-28", "value": 24027.496098773972}, {"time": "2026-07-29", "value": 24048.70591972407}, {"time": "2026-07-30", "value": 24074.27205980987}, {"time": "2026-07-31", "value": 24103.73182643512}, {"time": "2026-08-03", "value": 24167.595536417488}, {"time": "2026-08-04", "value": 24210.195998722967}, {"time": "2026-08-05", "value": 24249.667845570777}, {"time": "2026-08-06", "value": 24286.461384087845}, {"time": "2026-08-07", "value": 24313.527003758052}, {"time": "2026-08-10", "value": 24339.26736351919}, {"time": "2026-08-11", "value": 24351.879921160216}, {"time": "2026-08-12", "value": 24359.88652093067}, {"time": "2026-08-13", "value": 24363.31157697299}, {"time": "2026-08-14", "value": 24363.567617261273}, {"time": "2026-08-17", "value": 24356.337405200677}, {"time": "2026-08-18", "value": 24337.15292762204}, {"time": "2026-08-19", "value": 24312.500342253275}, {"time": "2026-08-20", "value": 24304.81932007439}, {"time": "2026-08-21", "value": 24299.788908638737}, {"time": "2026-08-24", "value": 24292.099563173142}, {"time": "2026-08-25", "value": 24296.14253632332}, {"time": "2026-08-26", "value": 24287.724199530625}, {"time": "2026-08-27", "value": 24268.974238563424}, {"time": "2026-08-28", "value": 24260.086253045476}, {"time": "2026-08-31", "value": 24242.973313767336}, {"time": "2026-09-01", "value": 24225.147358289494}, {"time": "2026-09-02", "value": 24195.557059285733}, {"time": "2026-09-03", "value": 24164.880122091854}, {"time": "2026-09-04", "value": 24139.434321773584}, {"time": "2026-09-07", "value": 24105.1215664261}, {"time": "2026-09-08", "value": 24060.35757051647}, {"time": "2026-09-09", "value": 24000.466373324423}, {"time": "2026-09-10", "value": 23950.688697888763}, {"time": "2026-09-11", "value": 23898.061165649357}, {"time": "2026-09-15", "value": 23823.826731718465}, {"time": "2026-09-16", "value": 23766.0908153048}, {"time": "2026-09-17", "value": 23718.901176644817}, {"time": "2026-09-18", "value": 23683.424911309594}, {"time": "2026-09-21", "value": 23657.794041780107}, {"time": "2026-09-22", "value": 23626.480323515334}, {"time": "2026-09-23", "value": 23609.36798615673}, {"time": "2026-09-24", "value": 23557.34242646323}, {"time": "2026-09-25", "value": 23517.643147752446}, {"time": "2026-09-28", "value": 23447.41522891888}, {"time": "2026-09-29", "value": 23377.775608902797}, {"time": "2026-09-30", "value": 23305.6492860311}, {"time": "2026-10-01", "value": 23221.48737486147}, {"time": "2026-10-05", "value": 23158.083815350856}, {"time": "2026-10-06", "value": 23121.704367162678}, {"time": "2026-10-07", "value": 23072.30878755195}, {"time": "2026-10-08", "value": 22992.260405999383}, {"time": "2026-10-09", "value": 22947.326007213727}, {"time": "2026-10-12", "value": 22891.709207419564}, {"time": "2026-10-13", "value": 22875.541589451037}, {"time": "2026-10-14", "value": 22851.461363669987}, {"time": "2026-10-15", "value": 22865.355482308558}, {"time": "2026-10-16", "value": 22892.09785452917}, {"time": "2026-10-19", "value": 22891.797984454963}, {"time": "2026-10-21", "value": 22884.136234447345}, {"time": "2026-10-22", "value": 22865.423296940455}, {"time": "2026-10-23", "value": 22840.144887708033}, {"time": "2026-10-26", "value": 22831.86434780727}, {"time": "2026-10-27", "value": 22824.04393373039}, {"time": "2026-10-28", "value": 22812.120664744165}, {"time": "2026-10-29", "value": 22823.99012524472}, {"time": "2026-10-30", "value": 22845.81007611427}, {"time": "2026-11-02", "value": 22902.475857555768}, {"time": "2026-11-03", "value": 22988.987643443314}, {"time": "2026-11-04", "value": 23081.522116389187}]);
+
+    const ema50Series = chart.addLineSeries({ color: '#fb923c', lineWidth: 1, title: 'EMA 50' });
+    ema50Series.setData([{"time": "2026-01-12", "value": 25898.254154686063}, {"time": "2026-01-13", "value": 25891.7461792572}, {"time": "2026-01-14", "value": 25882.87768632064}, {"time": "2026-01-16", "value": 25875.484428401207}, {"time": "2026-01-19", "value": 25864.112490032534}, {"time": "2026-01-20", "value": 25839.34337277636}, {"time": "2026-01-21", "value": 25812.604416981205}, {"time": "2026-01-22", "value": 25792.106219869198}, {"time": "2026-01-23", "value": 25762.9510893106}, {"time": "2026-01-27", "value": 25739.909885440582}, {"time": "2026-01-28", "value": 25724.334987972325}, {"time": "2026-01-29", "value": 25712.35716062537}, {"time": "2026-01-30", "value": 25696.996110821437}, {"time": "2026-02-02", "value": 25673.129611990204}, {"time": "2026-02-03", "value": 25675.263775490588}, {"time": "2026-02-04", "value": 25679.21421566743}, {"time": "2026-02-05", "value": 25677.78623784714}, {"time": "2026-02-06", "value": 25678.41027631392}, {"time": "2026-02-09", "value": 25685.817747095727}, {"time": "2026-02-10", "value": 25695.595497822364}, {"time": "2026-02-11", "value": 25705.723110040115}, {"time": "2026-02-12", "value": 25709.70256528364}, {"time": "2026-02-13", "value": 25700.345586620555}, {"time": "2026-02-16", "value": 25699.65556361583}, {"time": "2026-02-17", "value": 25700.665164675014}, {"time": "2026-02-18", "value": 25705.319456624035}, {"time": "2026-02-19", "value": 25695.477501829955}, {"time": "2026-02-20", "value": 25690.605835091526}, {"time": "2026-02-23", "value": 25691.484037636958}, {"time": "2026-02-24", "value": 25681.019973048253}, {"time": "2026-02-25", "value": 25673.23487606597}, {"time": "2026-02-26", "value": 25666.306088033973}, {"time": "2026-02-27", "value": 25647.182335194408}, {"time": "2026-03-02", "value": 25616.5359384711}, {"time": "2026-03-04", "value": 25571.98550951145}, {"time": "2026-03-05", "value": 25540.37432837865}, {"time": "2026-03-06", "value": 25497.632167216743}, {"time": "2026-03-09", "value": 25440.001524629814}, {"time": "2026-03-10", "value": 25393.7896848159}, {"time": "2026-03-11", "value": 25333.909681857433}, {"time": "2026-03-12", "value": 25267.44853318165}, {"time": "2026-03-13", "value": 25184.45445773825}, {"time": "2026-03-16", "value": 25114.82098022891}, {"time": "2026-03-17", "value": 25054.67703553856}, {"time": "2026-03-18", "value": 25004.60345693901}, {"time": "2026-03-19", "value": 24926.07588571101}, {"time": "2026-03-20", "value": 24855.0336941145}, {"time": "2026-03-23", "value": 24763.17552535021}, {"time": "2026-03-24", "value": 24690.59610830216}, {"time": "2026-03-25", "value": 24636.315838123646}, {"time": "2026-03-27", "value": 24565.072064447228}, {"time": "2026-03-30", "value": 24477.477096846356}, {"time": "2026-04-01", "value": 24406.964284837675}, {"time": "2026-04-02", "value": 24340.538219133257}, {"time": "2026-04-06", "value": 24286.722994853524}, {"time": "2026-04-07", "value": 24241.11230449162}, {"time": "2026-04-08", "value": 24231.552983114496}, {"time": "2026-04-09", "value": 24213.652850810988}, {"time": "2026-04-10", "value": 24207.258606048792}, {"time": "2026-04-13", "value": 24192.960244659625}, {"time": "2026-04-15", "value": 24194.46379511415}, {"time": "2026-04-16", "value": 24194.553450207713}, {"time": "2026-04-17", "value": 24200.788639660354}, {"time": "2026-04-20", "value": 24207.222403178577}, {"time": "2026-04-21", "value": 24221.70778381373}, {"time": "2026-04-22", "value": 24227.84079658084}, {"time": "2026-04-23", "value": 24225.69216852865}, {"time": "2026-04-24", "value": 24212.839503831452}, {"time": "2026-04-27", "value": 24208.128120102767}, {"time": "2026-04-28", "value": 24199.797574951677}, {"time": "2026-04-29", "value": 24198.929057919257}, {"time": "2026-04-30", "value": 24191.031870598894}, {"time": "2026-05-04", "value": 24188.21888670286}, {"time": "2026-05-05", "value": 24182.124059038044}, {"time": "2026-05-06", "value": 24187.96033981106}, {"time": "2026-05-07", "value": 24193.399165333172}, {"time": "2026-05-08", "value": 24192.7227427956}, {"time": "2026-05-11", "value": 24177.943404230085}, {"time": "2026-05-12", "value": 24146.633889603418}, {"time": "2026-05-13", "value": 24117.848231555246}, {"time": "2026-05-14", "value": 24101.054167940336}, {"time": "2026-05-15", "value": 24083.110867236795}, {"time": "2026-05-18", "value": 24066.124135923586}, {"time": "2026-05-19", "value": 24048.550640397174}, {"time": "2026-05-20", "value": 24033.274144695322}, {"time": "2026-05-21", "value": 24018.428069168054}, {"time": "2026-05-22", "value": 24006.697587288916}, {"time": "2026-05-25", "value": 24007.678043424643}, {"time": "2026-05-26", "value": 24003.992599319754}, {"time": "2026-05-27", "value": 24000.194865645448}, {"time": "2026-05-29", "value": 23982.451929737785}, {"time": "2026-06-01", "value": 23958.9283093314}, {"time": "2026-06-02", "value": 23940.28605332821}, {"time": "2026-06-03", "value": 23919.31795748691}, {"time": "2026-06-04", "value": 23899.601597634482}, {"time": "2026-06-05", "value": 23878.70346512921}, {"time": "2026-06-08", "value": 23849.068035124143}, {"time": "2026-06-09", "value": 23825.26535176143}, {"time": "2026-06-10", "value": 23801.331385760983}, {"time": "2026-06-11", "value": 23776.243865118395}, {"time": "2026-06-12", "value": 23770.23039553042}, {"time": "2026-06-15", "value": 23773.511571808638}, {"time": "2026-06-16", "value": 23781.967996075946}, {"time": "2026-06-17", "value": 23793.879024416106}, {"time": "2026-06-18", "value": 23808.55043522332}, {"time": "2026-06-19", "value": 23816.57197146456}, {"time": "2026-06-22", "value": 23827.800536921834}, {"time": "2026-06-23", "value": 23827.655402508233}, {"time": "2026-06-24", "value": 23835.26304910105}, {"time": "2026-06-25", "value": 23843.919400116694}, {"time": "2026-06-29", "value": 23847.932364818}, {"time": "2026-06-30", "value": 23848.63109560945}, {"time": "2026-07-01", "value": 23854.796527521827}, {"time": "2026-07-02", "value": 23867.380946785677}, {"time": "2026-07-03", "value": 23883.203247279376}, {"time": "2026-07-06", "value": 23904.659967361556}, {"time": "2026-07-07", "value": 23924.0340556513}, {"time": "2026-07-08", "value": 23922.387652733603}, {"time": "2026-07-09", "value": 23923.972481302873}, {"time": "2026-07-10", "value": 23935.067693433153}, {"time": "2026-07-13", "value": 23945.88856820048}, {"time": "2026-07-14", "value": 23950.051792241637}, {"time": "2026-07-15", "value": 23955.08897685961}, {"time": "2026-07-16", "value": 23959.70313462982}, {"time": "2026-07-17", "value": 23974.39323841885}, {"time": "2026-07-20", "value": 23984.75036632399}, {"time": "2026-07-21", "value": 23992.7091448505}, {"time": "2026-07-22", "value": 23992.84800191519}, {"time": "2026-07-23", "value": 23988.0147316195}, {"time": "2026-07-24", "value": 23979.365103663833}, {"time": "2026-07-27", "value": 23980.015461118193}, {"time": "2026-07-28", "value": 23980.224643402773}, {"time": "2026-07-29", "value": 23990.811881651687}, {"time": "2026-07-30", "value": 24003.60947023888}, {"time": "2026-07-31", "value": 24018.51104432265}, {"time": "2026-08-03", "value": 24048.14985753549}, {"time": "2026-08-04", "value": 24070.37536863704}, {"time": "2026-08-05", "value": 24092.111644009117}, {"time": "2026-08-06", "value": 24113.440599146015}, {"time": "2026-08-07", "value": 24131.37039489029}, {"time": "2026-08-10", "value": 24149.11276298283}, {"time": "2026-08-11", "value": 24161.7632122286}, {"time": "2026-08-12", "value": 24172.515604641205}, {"time": "2026-08-13", "value": 24181.273800905277}, {"time": "2026-08-14", "value": 24188.51796557566}, {"time": "2026-08-17", "value": 24192.405511656027}, {"time": "2026-08-18", "value": 24190.934722595986}, {"time": "2026-08-19", "value": 24186.5177052883}, {"time": "2026-08-20", "value": 24188.29542701719}, {"time": "2026-08-21", "value": 24190.793645565536}, {"time": "2026-08-24", "value": 24191.901768533557}, {"time": "2026-08-25", "value": 24197.49584746361}, {"time": "2026-08-26", "value": 24197.89797109249}, {"time": "2026-08-27", "value": 24193.699996123178}, {"time": "2026-08-28", "value": 24192.99216845658}, {"time": "2026-08-31", "value": 24188.57680462005}, {"time": "2026-09-01", "value": 24183.369901742793}, {"time": "2026-09-02", "value": 24172.823992605823}, {"time": "2026-09-03", "value": 24161.083805395792}, {"time": "2026-09-04", "value": 24150.75499807635}, {"time": "2026-09-07", "value": 24136.182268372377}, {"time": "2026-09-08", "value": 24116.53196801954}, {"time": "2026-09-09", "value": 24089.667969273672}, {"time": "2026-09-10", "value": 24065.67317758647}, {"time": "2026-09-11", "value": 24039.493821970333}, {"time": "2026-09-15", "value": 24003.380323437184}, {"time": "2026-09-16", "value": 23972.56539347396}, {"time": "2026-09-17", "value": 23945.037323509296}, {"time": "2026-09-18", "value": 23921.56136535697}, {"time": "2026-09-21", "value": 23901.66879343121}, {"time": "2026-09-22", "value": 23879.21119368881}, {"time": "2026-09-23", "value": 23862.253922612777}, {"time": "2026-09-24", "value": 23830.914537779925}, {"time": "2026-09-25", "value": 23803.839457866987}, {"time": "2026-09-28", "value": 23763.69869481338}, {"time": "2026-09-29", "value": 23722.62028398737}, {"time": "2026-09-30", "value": 23679.39788927218}, {"time": "2026-10-01", "value": 23630.08617670268}, {"time": "2026-10-05", "value": 23587.955346243754}, {"time": "2026-10-06", "value": 23556.11786636655}, {"time": "2026-10-07", "value": 23518.742686558056}, {"time": "2026-10-08", "value": 23468.274376545978}, {"time": "2026-10-09", "value": 23431.104762514762}, {"time": "2026-10-12", "value": 23389.23201141124}, {"time": "2026-10-13", "value": 23363.06405875786}, {"time": "2026-10-14", "value": 23334.030143463435}, {"time": "2026-10-15", "value": 23320.82698526389}, {"time": "2026-10-16", "value": 23313.976922729034}, {"time": "2026-10-19", "value": 23297.30916963182}, {"time": "2026-10-21", "value": 23278.25193197469}, {"time": "2026-10-22", "value": 23255.09108721588}, {"time": "2026-10-23", "value": 23229.401240658393}, {"time": "2026-10-26", "value": 23210.72665156395}, {"time": "2026-10-27", "value": 23192.649135816344}, {"time": "2026-10-28", "value": 23173.284448504917}, {"time": "2026-10-29", "value": 23164.008587779237}, {"time": "2026-10-30", "value": 23159.65921607711}, {"time": "2026-11-02", "value": 23170.684375495654}, {"time": "2026-11-03", "value": 23195.788894471312}, {"time": "2026-11-04", "value": 23225.78147152636}]);
+
+    const ema200Series = chart.addLineSeries({ color: '#a855f7', lineWidth: 2, title: 'EMA 200' });
+    ema200Series.setData([{"time": "2026-01-12", "value": 25140.661128577533}, {"time": "2026-01-13", "value": 25146.54809029567}, {"time": "2026-01-14", "value": 25151.712782027804}, {"time": "2026-01-16", "value": 25157.112153444195}, {"time": "2026-01-19", "value": 25161.374719081567}, {"time": "2026-01-20", "value": 25162.082433319563}, {"time": "2026-01-21", "value": 25162.036836968127}, {"time": "2026-01-22", "value": 25163.30911113387}, {"time": "2026-01-23", "value": 25162.168228342736}, {"time": "2026-01-27", "value": 25162.29989164903}, {"time": "2026-01-28", "value": 25164.09541511521}, {"time": "2026-01-29", "value": 25166.630788005856}, {"time": "2026-01-30", "value": 25168.16332136525}, {"time": "2026-02-02", "value": 25167.36966036286}, {"time": "2026-02-03", "value": 25172.943601864223}, {"time": "2026-02-04", "value": 25178.944163039705}, {"time": "2026-02-05", "value": 25183.559651778116}, {"time": "2026-02-06", "value": 25188.63566736988}, {"time": "2026-02-09", "value": 25195.388554075154}, {"time": "2026-02-10", "value": 25202.749368369186}, {"time": "2026-02-11", "value": 25210.22300260805}, {"time": "2026-02-12", "value": 25216.163064460212}, {"time": "2026-02-13", "value": 25218.699746499165}, {"time": "2026-02-16", "value": 25223.317161956886}, {"time": "2026-02-17", "value": 25228.31301497846}, {"time": "2026-02-18", "value": 25234.193976116734}, {"time": "2026-02-19", "value": 25236.38457943274}, {"time": "2026-02-20", "value": 25239.71657366724}, {"time": "2026-02-23", "value": 25244.425861491447}, {"time": "2026-02-24", "value": 25246.219140388297}, {"time": "2026-02-25", "value": 25248.570193717766}, {"time": "2026-02-26", "value": 25251.037662250426}, {"time": "2026-02-27", "value": 25250.317390890974}, {"time": "2026-03-02", "value": 25246.49034440201}, {"time": "2026-03-04", "value": 25238.868549930346}, {"time": "2026-03-05", "value": 25234.16239909149}, {"time": "2026-03-06", "value": 25226.364257993566}, {"time": "2026-03-09", "value": 25214.440740812042}, {"time": "2026-03-10", "value": 25204.959734529086}, {"time": "2026-03-11", "value": 25191.645205920588}, {"time": "2026-03-12", "value": 25176.197496315657}, {"time": "2026-03-13", "value": 25156.047268584905}, {"time": "2026-03-16", "value": 25138.661731397497}, {"time": "2026-03-17", "value": 25123.16410611618}, {"time": "2026-03-18", "value": 25109.777406366265}, {"time": "2026-03-19", "value": 25088.805993274316}, {"time": "2026-03-20", "value": 25069.161157520342}, {"time": "2026-03-23", "value": 25043.72323944178}, {"time": "2026-03-24", "value": 25022.51604691624}, {"time": "2026-03-25", "value": 25005.440755093692}, {"time": "2026-03-27", "value": 24983.691091952212}, {"time": "2026-03-30", "value": 24957.3001397002}, {"time": "2026-04-01", "value": 24934.634470555175}, {"time": "2026-04-02", "value": 24912.52964606582}, {"time": "2026-04-06", "value": 24893.183579935816}, {"time": "2026-04-07", "value": 24875.57628451979}, {"time": "2026-04-08", "value": 24866.837710637752}, {"time": "2026-04-09", "value": 24855.974644953545}, {"time": "2026-04-10", "value": 24847.96096300749}, {"time": "2026-04-13", "value": 24837.957872735027}, {"time": "2026-04-15", "value": 24831.92148376503}, {"time": "2026-04-16", "value": 24825.601369498712}, {"time": "2026-04-17", "value": 24820.90434872012}, {"time": "2026-04-20", "value": 24816.366490617183}, {"time": "2026-04-21", "value": 24813.98075050532}, {"time": "2026-04-22", "value": 24809.643624722932}, {"time": "2026-04-23", "value": 24803.309367573947}, {"time": "2026-04-24", "value": 24794.300808879183}, {"time": "2026-04-27", "value": 24787.319698529638}, {"time": "2026-04-28", "value": 24779.442877835314}, {"time": "2026-04-29", "value": 24773.45489288795}, {"time": "2026-04-30", "value": 24765.73445396618}, {"time": "2026-05-04", "value": 24759.302278118255}, {"time": "2026-05-05", "value": 24752.073407502652}, {"time": "2026-05-06", "value": 24747.883117067304}, {"time": "2026-05-07", "value": 24743.691746654946}, {"time": "2026-05-08", "value": 24738.04456898301}, {"time": "2026-05-11", "value": 24728.868499733177}, {"time": "2026-05-12", "value": 24715.442452783096}, {"time": "2026-05-13", "value": 24702.478842400928}, {"time": "2026-05-14", "value": 24692.40044207231}, {"time": "2026-05-15", "value": 24681.963621753184}, {"time": "2026-05-18", "value": 24671.6948217233}, {"time": "2026-05-19", "value": 24661.210296134017}, {"time": "2026-05-20", "value": 24651.238054381443}, {"time": "2026-05-21", "value": 24641.32224507168}, {"time": "2026-05-22", "value": 24632.14790214808}, {"time": "2026-05-25", "value": 24626.173288382928}, {"time": "2026-05-26", "value": 24619.083994157725}, {"time": "2026-05-27", "value": 24612.000077704663}, {"time": "2026-05-29", "value": 24601.410524692677}, {"time": "2026-06-01", "value": 24589.28305289847}, {"time": "2026-06-02", "value": 24578.28074173779}, {"time": "2026-06-03", "value": 24566.61227275906}, {"time": "2026-06-04", "value": 24555.168874833595}, {"time": "2026-06-05", "value": 24543.34330611635}, {"time": "2026-06-08", "value": 24529.21053690126}, {"time": "2026-06-09", "value": 24516.403462995528}, {"time": "2026-06-10", "value": 24503.453669520448}, {"time": "2026-06-11", "value": 24490.101887827463}, {"time": "2026-06-12", "value": 24481.473017208533}, {"time": "2026-06-15", "value": 24475.228513461432}, {"time": "2026-06-16", "value": 24470.391915224252}, {"time": "2026-06-17", "value": 24466.564127199636}, {"time": "2026-06-18", "value": 24463.593339864317}, {"time": "2026-06-19", "value": 24459.11081518283}, {"time": "2026-06-22", "value": 24455.566432848922}, {"time": "2026-06-23", "value": 24449.28318087406}, {"time": "2026-06-24", "value": 24445.028128234768}, {"time": "2026-06-25", "value": 24441.157201585665}, {"time": "2026-06-29", "value": 24436.232751818643}, {"time": "2026-06-30", "value": 24430.556306526916}, {"time": "2026-07-01", "value": 24426.330369241823}, {"time": "2026-07-02", "value": 24423.836526948373}, {"time": "2026-07-03", "value": 24422.31426906207}, {"time": "2026-07-06", "value": 24422.39422269703}, {"time": "2026-07-07", "value": 24422.15845151348}, {"time": "2026-07-08", "value": 24416.784245839215}, {"time": "2026-07-09", "value": 24412.26699743534}, {"time": "2026-07-10", "value": 24410.22354861136}, {"time": "2026-07-13", "value": 24408.241224744583}, {"time": "2026-07-14", "value": 24404.697041227224}, {"time": "2026-07-15", "value": 24401.45129952347}, {"time": "2026-07-16", "value": 24398.180639826718}, {"time": "2026-07-17", "value": 24397.545019343368}, {"time": "2026-07-20", "value": 24395.962481837465}, {"time": "2026-07-21", "value": 24393.890210562964}, {"time": "2026-07-22", "value": 24389.933591552388}, {"time": "2026-07-23", "value": 24384.75613899341}, {"time": "2026-07-24", "value": 24378.613781578053}, {"time": "2026-07-27", "value": 24374.806173987723}, {"time": "2026-07-28", "value": 24370.930984290084}, {"time": "2026-07-29", "value": 24369.729673190184}, {"time": "2026-07-30", "value": 24369.20649624924}, {"time": "2026-07-31", "value": 24369.349711305218}, {"time": "2026-08-03", "value": 24373.37907518527}, {"time": "2026-08-04", "value": 24375.782272353823}, {"time": "2026-08-05", "value": 24378.258572038114}, {"time": "2026-08-06", "value": 24380.82316336112}, {"time": "2026-08-07", "value": 24382.7119914931}, {"time": "2026-08-10", "value": 24384.71287497327}, {"time": "2026-08-11", "value": 24385.578410732243}, {"time": "2026-08-12", "value": 24386.079612802074}, {"time": "2026-08-13", "value": 24386.176826698324}, {"time": "2026-08-14", "value": 24385.976062253565}, {"time": "2026-08-17", "value": 24384.997697361738}, {"time": "2026-08-18", "value": 24382.708171921575}, {"time": "2026-08-19", "value": 24379.679242661165}, {"time": "2026-08-20", "value": 24378.20830103643}, {"time": "2026-08-21", "value": 24376.95249704602}, {"time": "2026-08-24", "value": 24375.381335694816}, {"time": "2026-08-25", "value": 24374.975061521236}, {"time": "2026-08-26", "value": 24373.311130560825}, {"time": "2026-08-27", "value": 24370.50056816097}, {"time": "2026-08-28", "value": 24368.561760424294}, {"time": "2026-08-31", "value": 24365.69448311286}, {"time": "2026-09-01", "value": 24362.610963691342}, {"time": "2026-09-02", "value": 24358.151642846155}, {"time": "2026-09-03", "value": 24353.328733153656}, {"time": "2026-09-04", "value": 24348.795106144666}, {"time": "2026-09-07", "value": 24343.12699952258}, {"time": "2026-09-08", "value": 24336.081950864398}, {"time": "2026-09-09", "value": 24327.081135432913}, {"time": "2026-09-10", "value": 24318.630584645023}, {"time": "2026-09-11", "value": 24309.47107245328}, {"time": "2026-09-15", "value": 24297.62160515897}, {"time": "2026-09-16", "value": 24286.875117638734}, {"time": "2026-09-17", "value": 24276.762923526658}, {"time": "2026-09-18", "value": 24267.505584890823}, {"time": "2026-09-21", "value": 24259.0159848546}, {"time": "2026-09-22", "value": 24249.762094458038}, {"time": "2026-09-23", "value": 24241.77242965}, {"time": "2026-09-24", "value": 24230.04434188607}, {"time": "2026-09-25", "value": 24219.203104653374}, {"time": "2026-09-28", "value": 24204.885163313542}, {"time": "2026-09-29", "value": 24190.07236784525}, {"time": "2026-09-30", "value": 24174.45422705823}, {"time": "2026-10-01", "value": 24157.016366279044}, {"time": "2026-10-05", "value": 24141.0833676096}, {"time": "2026-10-06", "value": 24127.50143966697}, {"time": "2026-10-07", "value": 24112.332776399136}, {"time": "2026-10-08", "value": 24093.621015253375}, {"time": "2026-10-09", "value": 24077.9675645419}, {"time": "2026-10-12", "value": 24060.906689366115}, {"time": "2026-10-13", "value": 24047.58372945949}, {"time": "2026-10-14", "value": 24033.405774129045}, {"time": "2026-10-15", "value": 24023.09675756433}, {"time": "2026-10-16", "value": 24014.370923067425}, {"time": "2026-10-19", "value": 24003.17269715382}, {"time": "2026-10-21", "value": 23991.313760957015}, {"time": "2026-10-22", "value": 23978.34198612784}, {"time": "2026-10-23", "value": 23964.62714049473}, {"time": "2026-10-26", "value": 23952.57313132314}, {"time": "2026-10-27", "value": 23940.60474195674}, {"time": "2026-10-28", "value": 23928.24896949324}, {"time": "2026-10-29", "value": 23918.38330810525}, {"time": "2026-10-30", "value": 23909.773520058185}, {"time": "2026-11-02", "value": 23905.107124647162}, {"time": "2026-11-03", "value": 23904.169238923063}, {"time": "2026-11-04", "value": 23904.730735146466}]);
+
+    // Marked Levels on the Chart
+    const r1 = 24393.53;
+    if (r1 > 0) {
+      candleSeries.createPriceLine({
+        price: r1,
+        color: '#f43f5e',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: true,
+        title: 'LAAL LINE: Resistance R1 (24,394)',
+      });
+    }
+
+    const s1 = 22229.17;
+    if (s1 > 0) {
+      candleSeries.createPriceLine({
+        price: s1,
+        color: '#10b981',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: true,
+        title: 'HARI LINE: Support S1 (22,229)',
+      });
+    }
+
+    const dayCeil = 24257.99;
+    if (dayCeil > 0) {
+      candleSeries.createPriceLine({
+        price: dayCeil,
+        color: '#f59e0b',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: 'DOTTED TOP: Day Ceiling (24,258)',
+      });
+    }
+
+    const dayFloor = 23663.21;
+    if (dayFloor > 0) {
+      candleSeries.createPriceLine({
+        price: dayFloor,
+        color: '#06b6d4',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: 'DOTTED BTM: Day Floor (23,663)',
+      });
+    }
+
+    const callWall = 24200.0;
+    if (callWall > 0) {
+      candleSeries.createPriceLine({
+        price: callWall,
+        color: '#ec4899',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'Call Wall Ceiling (24,200)',
+      });
+    }
+
+    const putFloor = 23800.0;
+    if (putFloor > 0) {
+      candleSeries.createPriceLine({
+        price: putFloor,
+        color: '#10b981',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'Put Floor Base (23,800)',
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      chart.applyOptions({
+        width: chartContainer.clientWidth,
+        height: chartContainer.clientHeight,
+      });
+    });
+
+    function fitChart() {
+      chart.timeScale().fitContent();
+    }
+
+    function openPineModal() {
+      document.getElementById('pine-modal').style.display = 'flex';
+    }
+
+    function closePineModal() {
+      document.getElementById('pine-modal').style.display = 'none';
+    }
+
+    function copyPineScript() {
+      const code = document.getElementById('pine-code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        alert('Pine Script copied to clipboard! Paste it into TradingView Pine Editor.');
+      });
+    }
+  </script>
+</body>
+</html>

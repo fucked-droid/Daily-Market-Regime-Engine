@@ -479,6 +479,7 @@ def main():
     parser.add_argument("--json", "-j", action="store_true", help="Output raw forecast as JSON.")
     parser.add_argument("--live", "-l", action="store_true", help="Start continuous live market scanning and breakout alert loop.")
     parser.add_argument("--interval", "-i", type=int, default=30, help="Polling interval in seconds for live market scanner (default: 30).")
+    parser.add_argument("--chart", "-c", action="store_true", help="Generate and directly open interactive TradingView chart with levels marked in default browser.")
 
     args = parser.parse_args()
 
@@ -493,6 +494,11 @@ def main():
             print(json.dumps(forecast, indent=2))
         else:
             print_dashboard(forecast)
+
+        if args.chart:
+            from src.chart_app import launch_chart_application
+            launch_chart_application(forecast=forecast, open_browser=True)
+
         return 0
     except Exception as exc:
         print(f"\n[ERROR] Scan failed: {exc}", file=sys.stderr)
