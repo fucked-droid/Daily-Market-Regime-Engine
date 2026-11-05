@@ -701,9 +701,25 @@ def launch_chart_application(
     print(f"\n[CHART READY] Interactive chart generated at: {output_html_path}")
 
     if open_browser:
+        resolved_path = str(Path(output_html_path).resolve())
         uri = Path(output_html_path).resolve().as_uri()
-        print(f"[BROWSER] Launching chart application in your default browser: {uri}")
-        webbrowser.open(uri)
+        print(f"[BROWSER] Launching chart application in your default browser: {resolved_path}")
+        opened = False
+        try:
+            if hasattr(os, "startfile"):
+                os.startfile(resolved_path)
+                opened = True
+        except Exception:
+            pass
+        if not opened:
+            try:
+                import subprocess
+                subprocess.Popen(["cmd", "/c", "start", "", resolved_path], shell=True)
+                opened = True
+            except Exception:
+                pass
+        if not opened:
+            webbrowser.open(uri)
 
     return output_html_path
 
