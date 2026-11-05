@@ -480,13 +480,15 @@ def main():
     parser.add_argument("--live", "-l", action="store_true", help="Start continuous live market scanning and breakout alert loop.")
     parser.add_argument("--interval", "-i", type=int, default=30, help="Polling interval in seconds for live market scanner (default: 30).")
     parser.add_argument("--chart", "-c", action="store_true", help="Generate and directly open interactive TradingView chart with levels marked in default browser.")
+    parser.add_argument("--web", "-w", action="store_true", help="Redirect and launch interactive chart application in browser.")
+    parser.add_argument("--no-chart", action="store_true", help="Do not open browser chart in live scanning mode.")
 
     args = parser.parse_args()
 
     try:
         if args.live:
             from src.live_scanner import run_live_market_loop
-            run_live_market_loop(interval=args.interval)
+            run_live_market_loop(interval=args.interval, launch_chart=not args.no_chart)
             return 0
 
         forecast = scan_and_predict(update_data=args.update, include_news=args.news)
@@ -495,7 +497,7 @@ def main():
         else:
             print_dashboard(forecast)
 
-        if args.chart:
+        if args.chart or args.web:
             from src.chart_app import launch_chart_application
             launch_chart_application(forecast=forecast, open_browser=True)
 

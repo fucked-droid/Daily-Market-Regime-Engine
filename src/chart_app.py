@@ -119,6 +119,16 @@ def build_chart_html(forecast: Dict[str, Any], df: pd.DataFrame) -> str:
     call_wall = float(opt.get("major_resistance_wall") or opt.get("major_call_wall") or 0.0)
     put_floor = float(opt.get("major_support_floor") or opt.get("major_put_floor") or 0.0)
 
+    alerts_list = forecast.get("alerts") or []
+    alerts_html = ""
+    if alerts_list:
+        items = "".join([f'<span style="padding: 2px 8px; border-radius: 4px; background: rgba(244, 63, 94, 0.25); border: 1px solid #f43f5e; color: #fff; font-weight: 600;">{a.get("message", "")}</span>' for a in alerts_list[:3]])
+        alerts_html = f'''
+  <div style="background: rgba(244, 63, 94, 0.15); border-bottom: 1px solid rgba(244, 63, 94, 0.4); padding: 6px 24px; font-size: 12px; display: flex; align-items: center; gap: 12px; z-index: 10;">
+    <span style="color: #f43f5e; font-weight: 700; text-transform: uppercase;">🚨 Active Live Alerts:</span>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">{items}</div>
+  </div>'''
+
     pine_script = generate_pine_script_v5(forecast)
 
     candles_json = json.dumps(candle_data)
@@ -342,6 +352,9 @@ def build_chart_html(forecast: Dict[str, Any], df: pd.DataFrame) -> str:
       <h2 style="font-size: 18px; font-weight: 800;">NIFTY 50</h2>
       <span class="badge {'badge-bullish' if 'Bullish' in regime else 'badge-bearish'}">{regime}</span>
       <span style="font-size: 13px; color: var(--text-muted);">As of: {as_of}</span>
+      <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #10b981; font-weight: 700; letter-spacing: 0.05em; margin-left: 6px;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981;"></span> LIVE
+      </span>
     </div>
 
     <div class="metrics">
@@ -367,9 +380,12 @@ def build_chart_html(forecast: Dict[str, Any], df: pd.DataFrame) -> str:
       <button class="btn" onclick="openPineModal()">📋 Pine Script (TV)</button>
       <a href="https://in.tradingview.com/chart/?symbol=NSE%3ANIFTY" target="_blank" class="btn">🚀 TradingView Live</a>
       <a href="https://tv.dhan.co" target="_blank" class="btn">⚡ Dhan TV</a>
+      <a href="https://kite.zerodha.com" target="_blank" class="btn">🪁 Zerodha Kite</a>
+      <button id="btn-toggle-refresh" class="btn" onclick="toggleAutoRefresh()">🔄 Auto-Refresh: <span id="refresh-timer">15s</span></button>
       <button class="btn btn-primary" onclick="fitChart()">Reset Zoom</button>
     </div>
   </header>
+  {alerts_html}
 
   <div id="chart-wrapper">
     <div id="tv-chart"></div>
@@ -566,6 +582,26 @@ def build_chart_html(forecast: Dict[str, Any], df: pd.DataFrame) -> str:
         alert('Pine Script copied to clipboard! Paste it into TradingView Pine Editor.');
       }});
     }}
+
+    let refreshCountdown = 15;
+    let autoRefreshActive = true;
+    function updateRefresh() {{
+      if (!autoRefreshActive) return;
+      const el = document.getElementById('refresh-timer');
+      if (el) el.innerText = refreshCountdown + 's';
+      refreshCountdown--;
+      if (refreshCountdown <= 0) {{
+        window.location.reload();
+      }}
+    }}
+    function toggleAutoRefresh() {{
+      autoRefreshActive = !autoRefreshActive;
+      const btn = document.getElementById('btn-toggle-refresh');
+      if (btn) {{
+        btn.innerHTML = autoRefreshActive ? '🔄 Auto-Refresh: <span id=\"refresh-timer\">15s</span>' : '⏸ Auto-Refresh: OFF';
+      }}
+    }}
+    setInterval(updateRefresh, 1000);
   </script>
 </body>
 </html>

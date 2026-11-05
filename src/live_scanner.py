@@ -480,6 +480,7 @@ def render_live_screen(
 def run_live_market_loop(
     interval: int = 30,
     max_iterations: Optional[int] = None,
+    launch_chart: bool = True,
 ):
     """
     Main live scanning loop.
@@ -490,6 +491,13 @@ def run_live_market_loop(
     print(f"Initializing Live Market Regime Scanner (Polling every {interval}s)...", flush=True)
     # Initial forecast generation
     forecast = scan_and_predict(update_data=False, include_news=False)
+
+    if launch_chart:
+        from src.chart_app import launch_chart_application
+        try:
+            launch_chart_application(forecast=forecast, open_browser=True)
+        except Exception as e:
+            print(f"[WARNING] Could not launch browser chart: {e}", flush=True)
 
     iteration = 1
     last_slow_data_time = 0.0
@@ -530,6 +538,20 @@ def run_live_market_loop(
                     breadth_analysis=breadth_analysis,
                     institutional_analysis=institutional_analysis,
                 )
+
+                if launch_chart:
+                    from src.chart_app import launch_chart_application
+                    try:
+                        live_fc = dict(forecast)
+                        live_fc["nifty_close"] = live_nifty["price"]
+                        live_fc["live_tick"] = live_nifty
+                        live_fc["alerts"] = alerts
+                        if option_analysis:
+                            live_fc["option_data"] = option_analysis
+                        launch_chart_application(forecast=live_fc, open_browser=False)
+                    except Exception:
+                        pass
+
                 render_live_screen(
                     live_nifty=live_nifty,
                     live_vix=live_vix,
