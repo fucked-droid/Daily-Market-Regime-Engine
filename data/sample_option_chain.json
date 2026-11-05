@@ -1,74 +1,80 @@
 {
   "records": {
     "expiryDates": [
-      "05-Nov-2026",
       "12-Nov-2026",
       "19-Nov-2026",
-      "26-Nov-2026"
+      "26-Nov-2026",
+      "31-Dec-2026"
     ],
     "data": [
       {
-        "strikePrice": 23600,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 23600, "expiryDate": "05-Nov-2026", "openInterest": 15000, "changeinOpenInterest": -1200, "totalTradedVolume": 45000, "impliedVolatility": 11.2, "lastPrice": 460.0 },
-        "PE": { "strikePrice": 23600, "expiryDate": "05-Nov-2026", "openInterest": 95000, "changeinOpenInterest": 18000, "totalTradedVolume": 120000, "impliedVolatility": 14.5, "lastPrice": 18.0 }
-      },
-      {
-        "strikePrice": 23700,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 23700, "expiryDate": "05-Nov-2026", "openInterest": 22000, "changeinOpenInterest": -2500, "totalTradedVolume": 52000, "impliedVolatility": 11.5, "lastPrice": 370.0 },
-        "PE": { "strikePrice": 23700, "expiryDate": "05-Nov-2026", "openInterest": 145000, "changeinOpenInterest": 25000, "totalTradedVolume": 190000, "impliedVolatility": 14.0, "lastPrice": 28.0 }
-      },
-      {
-        "strikePrice": 23800,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 23800, "expiryDate": "05-Nov-2026", "openInterest": 45000, "changeinOpenInterest": -4000, "totalTradedVolume": 85000, "impliedVolatility": 12.0, "lastPrice": 285.0 },
-        "PE": { "strikePrice": 23800, "expiryDate": "05-Nov-2026", "openInterest": 280000, "changeinOpenInterest": 62000, "totalTradedVolume": 380000, "impliedVolatility": 13.5, "lastPrice": 42.0 }
-      },
-      {
-        "strikePrice": 23900,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 23900, "expiryDate": "05-Nov-2026", "openInterest": 78000, "changeinOpenInterest": -8000, "totalTradedVolume": 160000, "impliedVolatility": 12.2, "lastPrice": 205.0 },
-        "PE": { "strikePrice": 23900, "expiryDate": "05-Nov-2026", "openInterest": 210000, "changeinOpenInterest": 48000, "totalTradedVolume": 310000, "impliedVolatility": 13.0, "lastPrice": 65.0 }
-      },
-      {
         "strikePrice": 24000,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 24000, "expiryDate": "05-Nov-2026", "openInterest": 185000, "changeinOpenInterest": 15000, "totalTradedVolume": 420000, "impliedVolatility": 12.5, "lastPrice": 135.0 },
-        "PE": { "strikePrice": 24000, "expiryDate": "05-Nov-2026", "openInterest": 260000, "changeinOpenInterest": 55000, "totalTradedVolume": 450000, "impliedVolatility": 12.8, "lastPrice": 98.0 }
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24000, "expiryDate": "12-Nov-2026", "openInterest": 12000, "changeinOpenInterest": -1500, "totalTradedVolume": 38000, "impliedVolatility": 11.2, "lastPrice": 585.0 },
+        "PE": { "strikePrice": 24000, "expiryDate": "12-Nov-2026", "openInterest": 110000, "changeinOpenInterest": 16000, "totalTradedVolume": 95000, "impliedVolatility": 14.5, "lastPrice": 14.0 }
       },
       {
         "strikePrice": 24100,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 24100, "expiryDate": "05-Nov-2026", "openInterest": 160000, "changeinOpenInterest": 22000, "totalTradedVolume": 320000, "impliedVolatility": 12.8, "lastPrice": 82.0 },
-        "PE": { "strikePrice": 24100, "expiryDate": "05-Nov-2026", "openInterest": 110000, "changeinOpenInterest": 12000, "totalTradedVolume": 220000, "impliedVolatility": 12.5, "lastPrice": 145.0 }
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24100, "expiryDate": "12-Nov-2026", "openInterest": 18000, "changeinOpenInterest": -2200, "totalTradedVolume": 46000, "impliedVolatility": 11.5, "lastPrice": 490.0 },
+        "PE": { "strikePrice": 24100, "expiryDate": "12-Nov-2026", "openInterest": 130000, "changeinOpenInterest": 21000, "totalTradedVolume": 140000, "impliedVolatility": 14.1, "lastPrice": 22.0 }
       },
       {
         "strikePrice": 24200,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 24200, "expiryDate": "05-Nov-2026", "openInterest": 310000, "changeinOpenInterest": 45000, "totalTradedVolume": 540000, "impliedVolatility": 13.1, "lastPrice": 45.0 },
-        "PE": { "strikePrice": 24200, "expiryDate": "05-Nov-2026", "openInterest": 65000, "changeinOpenInterest": 3000, "totalTradedVolume": 140000, "impliedVolatility": 12.2, "lastPrice": 210.0 }
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24200, "expiryDate": "12-Nov-2026", "openInterest": 28000, "changeinOpenInterest": -3500, "totalTradedVolume": 72000, "impliedVolatility": 11.8, "lastPrice": 398.0 },
+        "PE": { "strikePrice": 24200, "expiryDate": "12-Nov-2026", "openInterest": 180000, "changeinOpenInterest": 35000, "totalTradedVolume": 220000, "impliedVolatility": 13.7, "lastPrice": 32.0 }
       },
       {
         "strikePrice": 24300,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 24300, "expiryDate": "05-Nov-2026", "openInterest": 195000, "changeinOpenInterest": 28000, "totalTradedVolume": 280000, "impliedVolatility": 13.5, "lastPrice": 22.0 },
-        "PE": { "strikePrice": 24300, "expiryDate": "05-Nov-2026", "openInterest": 35000, "changeinOpenInterest": 500, "totalTradedVolume": 85000, "impliedVolatility": 12.0, "lastPrice": 285.0 }
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24300, "expiryDate": "12-Nov-2026", "openInterest": 45000, "changeinOpenInterest": -5000, "totalTradedVolume": 110000, "impliedVolatility": 12.0, "lastPrice": 315.0 },
+        "PE": { "strikePrice": 24300, "expiryDate": "12-Nov-2026", "openInterest": 220000, "changeinOpenInterest": 48000, "totalTradedVolume": 310000, "impliedVolatility": 13.3, "lastPrice": 48.0 }
       },
       {
         "strikePrice": 24400,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 24400, "expiryDate": "05-Nov-2026", "openInterest": 120000, "changeinOpenInterest": 14000, "totalTradedVolume": 180000, "impliedVolatility": 13.9, "lastPrice": 10.5 },
-        "PE": { "strikePrice": 24400, "expiryDate": "05-Nov-2026", "openInterest": 18000, "changeinOpenInterest": -500, "totalTradedVolume": 45000, "impliedVolatility": 11.8, "lastPrice": 375.0 }
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24400, "expiryDate": "12-Nov-2026", "openInterest": 75000, "changeinOpenInterest": -2500, "totalTradedVolume": 195000, "impliedVolatility": 12.2, "lastPrice": 235.0 },
+        "PE": { "strikePrice": 24400, "expiryDate": "12-Nov-2026", "openInterest": 310000, "changeinOpenInterest": 65000, "totalTradedVolume": 410000, "impliedVolatility": 13.0, "lastPrice": 72.0 }
       },
       {
         "strikePrice": 24500,
-        "expiryDate": "05-Nov-2026",
-        "CE": { "strikePrice": 24500, "expiryDate": "05-Nov-2026", "openInterest": 180000, "changeinOpenInterest": 25000, "totalTradedVolume": 220000, "impliedVolatility": 14.2, "lastPrice": 5.0 },
-        "PE": { "strikePrice": 24500, "expiryDate": "05-Nov-2026", "openInterest": 12000, "changeinOpenInterest": -1200, "totalTradedVolume": 32000, "impliedVolatility": 11.5, "lastPrice": 465.0 }
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24500, "expiryDate": "12-Nov-2026", "openInterest": 180000, "changeinOpenInterest": 12000, "totalTradedVolume": 420000, "impliedVolatility": 12.5, "lastPrice": 165.0 },
+        "PE": { "strikePrice": 24500, "expiryDate": "12-Nov-2026", "openInterest": 240000, "changeinOpenInterest": 42000, "totalTradedVolume": 380000, "impliedVolatility": 12.8, "lastPrice": 105.0 }
+      },
+      {
+        "strikePrice": 24600,
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24600, "expiryDate": "12-Nov-2026", "openInterest": 210000, "changeinOpenInterest": 28000, "totalTradedVolume": 360000, "impliedVolatility": 12.7, "lastPrice": 108.0 },
+        "PE": { "strikePrice": 24600, "expiryDate": "12-Nov-2026", "openInterest": 160000, "changeinOpenInterest": 22000, "totalTradedVolume": 260000, "impliedVolatility": 12.5, "lastPrice": 152.0 }
+      },
+      {
+        "strikePrice": 24700,
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24700, "expiryDate": "12-Nov-2026", "openInterest": 260000, "changeinOpenInterest": 38000, "totalTradedVolume": 450000, "impliedVolatility": 13.0, "lastPrice": 65.0 },
+        "PE": { "strikePrice": 24700, "expiryDate": "12-Nov-2026", "openInterest": 95000, "changeinOpenInterest": 9000, "totalTradedVolume": 160000, "impliedVolatility": 12.2, "lastPrice": 215.0 }
+      },
+      {
+        "strikePrice": 24800,
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24800, "expiryDate": "12-Nov-2026", "openInterest": 325000, "changeinOpenInterest": 48000, "totalTradedVolume": 580000, "impliedVolatility": 13.3, "lastPrice": 38.0 },
+        "PE": { "strikePrice": 24800, "expiryDate": "12-Nov-2026", "openInterest": 45000, "changeinOpenInterest": 2000, "totalTradedVolume": 90000, "impliedVolatility": 11.9, "lastPrice": 290.0 }
+      },
+      {
+        "strikePrice": 24900,
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 24900, "expiryDate": "12-Nov-2026", "openInterest": 230000, "changeinOpenInterest": 32000, "totalTradedVolume": 310000, "impliedVolatility": 13.6, "lastPrice": 20.0 },
+        "PE": { "strikePrice": 24900, "expiryDate": "12-Nov-2026", "openInterest": 20000, "changeinOpenInterest": -500, "totalTradedVolume": 42000, "impliedVolatility": 11.6, "lastPrice": 380.0 }
+      },
+      {
+        "strikePrice": 25000,
+        "expiryDate": "12-Nov-2026",
+        "CE": { "strikePrice": 25000, "expiryDate": "12-Nov-2026", "openInterest": 290000, "changeinOpenInterest": 40000, "totalTradedVolume": 390000, "impliedVolatility": 14.0, "lastPrice": 10.0 },
+        "PE": { "strikePrice": 25000, "expiryDate": "12-Nov-2026", "openInterest": 12000, "changeinOpenInterest": -1000, "totalTradedVolume": 25000, "impliedVolatility": 11.4, "lastPrice": 475.0 }
       }
     ],
-    "timestamp": "03-Nov-2026 15:30:00",
-    "underlyingValue": 24040.5
+    "timestamp": "05-Nov-2026 15:30:00",
+    "underlyingValue": 24548.10
   }
 }

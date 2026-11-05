@@ -119,10 +119,10 @@ class TestGlobalCues(unittest.TestCase):
         self.analyzer = GlobalCuesAnalyzer(self.data)
 
     def test_predict_opening_gap(self):
-        gap = self.analyzer.predict_opening_gap(spot_close=23990.0)
-        self.assertEqual(gap["gap_points"], 95.0)
-        self.assertAlmostEqual(gap["gap_pct"], 0.40, places=2)
-        self.assertEqual(gap["projected_open"], 24085.0)
+        gap = self.analyzer.predict_opening_gap(spot_close=24548.10)
+        self.assertEqual(gap["gap_points"], 46.9)
+        self.assertAlmostEqual(gap["gap_pct"], 0.19, places=2)
+        self.assertEqual(gap["projected_open"], 24595.0)
         self.assertEqual(gap["category"], "MODERATE_GAP_UP")
 
     def test_gap_categories(self):
@@ -150,12 +150,12 @@ class TestGlobalCues(unittest.TestCase):
         self.assertEqual(macro["yield_bias"], "BULLISH_FII_FLOW_SUPPORT")
 
     def test_global_sentiment_score(self):
-        res = self.analyzer.compute_global_sentiment_score(spot_close=23990.0)
+        res = self.analyzer.compute_global_sentiment_score(spot_close=24548.10)
         self.assertTrue(-2.0 <= res["score"] <= 2.0)
         self.assertEqual(res["verdict"], "BULLISH_GLOBAL_ALIGNMENT")
 
     def test_summary_text(self):
-        text = self.analyzer.get_summary_text(spot_close=23990.0)
+        text = self.analyzer.get_summary_text(spot_close=24548.10)
         self.assertIn("GIFT NIFTY:", text)
         self.assertIn("Projected Gap:", text)
         self.assertIn("Global Sentiment Score:", text)

@@ -487,29 +487,39 @@ def run_live_market_loop(
     """
     from scan_nifty import scan_and_predict
 
-    print(f"Initializing Live Market Regime Scanner (Polling every {interval}s)...")
+    print(f"Initializing Live Market Regime Scanner (Polling every {interval}s)...", flush=True)
     # Initial forecast generation
     forecast = scan_and_predict(update_data=False, include_news=False)
 
     iteration = 1
+    last_slow_data_time = 0.0
+    slow_data_interval = 300.0  # Refresh option chain & macro data every 5 mins
+
+    opt_raw = None
+    inst_raw = None
+    breadth_raw = None
+    global_raw = None
+
     try:
         while True:
+            now_ts = time.time()
             market_status = get_market_status()
             live_nifty = fetch_live_quote("^NSEI")
             live_vix = fetch_live_quote("^INDIAVIX")
             heavyweights = fetch_heavyweight_quotes()
 
             if live_nifty:
-                opt_raw = fetch_nse_option_chain("NIFTY") or load_cached_option_chain()
+                # Refresh higher-latency datasets every 5 minutes (or on initial run)
+                if (now_ts - last_slow_data_time > slow_data_interval) or opt_raw is None:
+                    opt_raw = fetch_nse_option_chain("NIFTY") or load_cached_option_chain()
+                    inst_raw = fetch_fii_dii_data() or load_cached_fii_dii()
+                    breadth_raw = fetch_market_breadth() or load_cached_breadth()
+                    global_raw = fetch_global_cues() or load_cached_global_cues()
+                    last_slow_data_time = now_ts
+
                 option_analysis = analyze_option_chain(opt_raw, spot_price=live_nifty["price"]) if opt_raw else None
-
-                inst_raw = fetch_fii_dii_data() or load_cached_fii_dii()
                 institutional_analysis = InstitutionalFlowAnalyzer(inst_raw).compute_smart_money_score() if inst_raw else None
-
-                breadth_raw = fetch_market_breadth() or load_cached_breadth()
                 breadth_analysis = MarketBreadthAnalyzer(breadth_raw).compute_breadth_score(index_change_pct=live_nifty["change_pct"]) if breadth_raw else None
-
-                global_raw = fetch_global_cues() or load_cached_global_cues()
                 global_analysis = GlobalCuesAnalyzer(global_raw).compute_global_sentiment_score(spot_close=live_nifty["price"]) if global_raw else None
 
                 alerts = evaluate_live_alerts(
@@ -534,7 +544,7 @@ def run_live_market_loop(
                     iteration=iteration,
                 )
             else:
-                print(f"[{datetime.now(IST).strftime('%H:%M:%S')}] Live tick fetch failed; retrying in {interval}s...")
+                print(f"[{datetime.now(IST).strftime('%H:%M:%S')}] Live tick fetch failed; retrying in {interval}s...", flush=True)
 
             iteration += 1
             if max_iterations and iteration > max_iterations:
@@ -543,4 +553,4 @@ def run_live_market_loop(
             time.sleep(interval)
 
     except KeyboardInterrupt:
-        print("\n\nLive Market Scanner stopped by user.")
+        print("\n\nLive Market Scanner stopped by user.", flush=True)
