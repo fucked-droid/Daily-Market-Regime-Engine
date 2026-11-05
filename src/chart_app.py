@@ -377,11 +377,12 @@ def build_chart_html(forecast: Dict[str, Any], df: pd.DataFrame) -> str:
     </div>
 
     <div class="actions">
+      <button class="btn" style="border-color: #00d09c; color: #00d09c; font-weight: 700;" onclick="openGrowwModal()">🌱 Groww Marker</button>
+      <a href="https://groww.in/charts/stocks/nifty-50" target="_blank" class="btn">🚀 Open Groww Chart</a>
       <button class="btn" onclick="openPineModal()">📋 Pine Script (TV)</button>
-      <a href="https://in.tradingview.com/chart/?symbol=NSE%3ANIFTY" target="_blank" class="btn">🚀 TradingView Live</a>
-      <a href="https://tv.dhan.co" target="_blank" class="btn">⚡ Dhan TV</a>
-      <a href="https://kite.zerodha.com" target="_blank" class="btn">🪁 Zerodha Kite</a>
-      <button id="btn-toggle-refresh" class="btn" onclick="toggleAutoRefresh()">🔄 Auto-Refresh: <span id="refresh-timer">15s</span></button>
+      <a href="https://in.tradingview.com/chart/?symbol=NSE%3ANIFTY" target="_blank" class="btn">TradingView Live</a>
+      <a href="https://tv.dhan.co" target="_blank" class="btn">Dhan TV</a>
+      <button id="btn-toggle-refresh" class="btn" onclick="toggleAutoRefresh()">🔄 Live: <span id="refresh-timer">15s</span></button>
       <button class="btn btn-primary" onclick="fitChart()">Reset Zoom</button>
     </div>
   </header>
@@ -434,6 +435,55 @@ def build_chart_html(forecast: Dict[str, Any], df: pd.DataFrame) -> str:
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
         <button class="btn" onclick="copyPineScript()">Copy Script</button>
         <button class="btn btn-primary" onclick="closePineModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="groww-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;">
+    <div class="modal-content" style="background:#1e293b; border:1px solid #00d09c; border-radius:12px; padding:24px; max-width:620px; width:90%; color:#f8fafc;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="color:#00d09c; font-size:18px; font-weight:700;">🌱 Groww NIFTY 50 Chart Marking Tool</h3>
+        <span style="font-size:12px; background:rgba(0,208,156,0.15); color:#00d09c; padding:3px 8px; border-radius:4px; font-weight:600;">Groww Terminal Ready</span>
+      </div>
+      <p style="font-size:13px; color:#94a3b8; margin-bottom:14px;">Open your NIFTY 50 chart on Groww (<a href="https://groww.in/charts/stocks/nifty-50" target="_blank" style="color:#38bdf8; text-decoration:underline;">groww.in/charts/stocks/nifty-50</a>). Use the <strong>Horizontal Line (Alt + H)</strong> tool on Groww's chart and input these coordinates:</p>
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #f43f5e; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🔴 RESISTANCE R1</div><strong style="color:#f43f5e; font-size:15px;">{r1:,.2f}</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('{r1:.2f}'); alert('Copied R1: {r1:.2f}')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #10b981; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🟢 SUPPORT S1</div><strong style="color:#10b981; font-size:15px;">{s1:,.2f}</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('{s1:.2f}'); alert('Copied S1: {s1:.2f}')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🟠 DAY CEILING (HIGH)</div><strong style="color:#f59e0b; font-size:15px;">{day_ceil:,.2f}</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('{day_ceil:.2f}'); alert('Copied Day Ceiling: {day_ceil:.2f}')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🔵 DAY FLOOR (LOW)</div><strong style="color:#06b6d4; font-size:15px;">{day_floor:,.2f}</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('{day_floor:.2f}'); alert('Copied Day Floor: {day_floor:.2f}')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #ec4899; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🟣 CALL WALL (CEILING)</div><strong style="color:#ec4899; font-size:15px;">{call_wall:,.2f}</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('{call_wall:.2f}'); alert('Copied Call Wall: {call_wall:.2f}')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #10b981; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🟢 PUT FLOOR (BASE)</div><strong style="color:#10b981; font-size:15px;">{put_floor:,.2f}</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('{put_floor:.2f}'); alert('Copied Put Floor: {put_floor:.2f}')">Copy</button>
+        </div>
+      </div>
+
+      <div style="background:#0f172a; padding:10px; border-radius:6px; font-size:11px; color:#94a3b8; margin-bottom:16px;">
+        💡 <strong>Groww Pro Tip:</strong> Press <kbd style="background:#334155; padding:2px 5px; border-radius:3px; color:#fff;">Alt + H</kbd> anywhere on Groww's chart to quickly drop a horizontal line, double-click the line, and paste the coordinate value!
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="btn" onclick="copyGrowwSummary()">📋 Copy All Levels</button>
+        <div style="display:flex; gap:10px;">
+          <a href="https://groww.in/charts/stocks/nifty-50" target="_blank" class="btn" style="background:#00d09c; color:#0f172a; font-weight:700;">🚀 Open Groww Chart</a>
+          <button class="btn btn-primary" onclick="closeGrowwModal()">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -574,6 +624,21 @@ def build_chart_html(forecast: Dict[str, Any], df: pd.DataFrame) -> str:
 
     function closePineModal() {{
       document.getElementById('pine-modal').style.display = 'none';
+    }}
+
+    function openGrowwModal() {{
+      document.getElementById('groww-modal').style.display = 'flex';
+    }}
+
+    function closeGrowwModal() {{
+      document.getElementById('groww-modal').style.display = 'none';
+    }}
+
+    function copyGrowwSummary() {{
+      const summary = `GROWW NIFTY 50 CHART LEVELS ({as_of}):\\n• Resistance R1: {r1:.2f}\\n• Day Ceiling: {day_ceil:.2f}\\n• Call Wall: {call_wall:.2f}\\n• Put Floor: {put_floor:.2f}\\n• Day Floor: {day_floor:.2f}\\n• Support S1: {s1:.2f}`;
+      navigator.clipboard.writeText(summary).then(() => {{
+        alert('All Groww levels copied to clipboard!');
+      }});
     }}
 
     function copyPineScript() {{

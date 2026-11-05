@@ -481,11 +481,17 @@ def main():
     parser.add_argument("--interval", "-i", type=int, default=30, help="Polling interval in seconds for live market scanner (default: 30).")
     parser.add_argument("--chart", "-c", action="store_true", help="Generate and directly open interactive TradingView chart with levels marked in default browser.")
     parser.add_argument("--web", "-w", action="store_true", help="Redirect and launch interactive chart application in browser.")
+    parser.add_argument("--groww", "-g", action="store_true", help="Open Groww live Nifty 50 chart alongside the engine chart.")
     parser.add_argument("--no-chart", action="store_true", help="Do not open browser chart in live scanning mode.")
 
     args = parser.parse_args()
 
     try:
+        if args.groww:
+            import webbrowser
+            print("[GROWW] Opening Groww Nifty 50 Live Chart: https://groww.in/charts/stocks/nifty-50", file=sys.stderr)
+            webbrowser.open("https://groww.in/charts/stocks/nifty-50")
+
         if args.live:
             from src.live_scanner import run_live_market_loop
             run_live_market_loop(interval=args.interval, launch_chart=not args.no_chart)
@@ -497,7 +503,7 @@ def main():
         else:
             print_dashboard(forecast)
 
-        if args.chart or args.web:
+        if args.chart or args.web or args.groww:
             from src.chart_app import launch_chart_application
             launch_chart_application(forecast=forecast, open_browser=True)
 
