@@ -214,6 +214,9 @@
       <h2 style="font-size: 18px; font-weight: 800;">NIFTY 50</h2>
       <span class="badge badge-bullish">Bullish</span>
       <span style="font-size: 13px; color: var(--text-muted);">As of: 2026-11-05</span>
+      <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #10b981; font-weight: 700; letter-spacing: 0.05em; margin-left: 6px;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981;"></span> LIVE
+      </span>
     </div>
 
     <div class="metrics">
@@ -236,12 +239,16 @@
     </div>
 
     <div class="actions">
+      <button class="btn" style="border-color: #00d09c; color: #00d09c; font-weight: 700;" onclick="openGrowwModal()">🌱 Groww Marker</button>
+      <a href="https://groww.in/charts/stocks/nifty-50" target="_blank" class="btn">🚀 Open Groww Chart</a>
       <button class="btn" onclick="openPineModal()">📋 Pine Script (TV)</button>
-      <a href="https://in.tradingview.com/chart/?symbol=NSE%3ANIFTY" target="_blank" class="btn">🚀 TradingView Live</a>
-      <a href="https://tv.dhan.co" target="_blank" class="btn">⚡ Dhan TV</a>
+      <a href="https://in.tradingview.com/chart/?symbol=NSE%3ANIFTY" target="_blank" class="btn">TradingView Live</a>
+      <a href="https://tv.dhan.co" target="_blank" class="btn">Dhan TV</a>
+      <button id="btn-toggle-refresh" class="btn" onclick="toggleAutoRefresh()">🔄 Live: <span id="refresh-timer">15s</span></button>
       <button class="btn btn-primary" onclick="fitChart()">Reset Zoom</button>
     </div>
   </header>
+  
 
   <div id="chart-wrapper">
     <div id="tv-chart"></div>
@@ -313,6 +320,55 @@ plot(ta.ema(close, 200), "EMA 200", color=color.purple, linewidth=2)
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
         <button class="btn" onclick="copyPineScript()">Copy Script</button>
         <button class="btn btn-primary" onclick="closePineModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="groww-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;">
+    <div class="modal-content" style="background:#1e293b; border:1px solid #00d09c; border-radius:12px; padding:24px; max-width:620px; width:90%; color:#f8fafc;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="color:#00d09c; font-size:18px; font-weight:700;">🌱 Groww NIFTY 50 Chart Marking Tool</h3>
+        <span style="font-size:12px; background:rgba(0,208,156,0.15); color:#00d09c; padding:3px 8px; border-radius:4px; font-weight:600;">Groww Terminal Ready</span>
+      </div>
+      <p style="font-size:13px; color:#94a3b8; margin-bottom:14px;">Open your NIFTY 50 chart on Groww (<a href="https://groww.in/charts/stocks/nifty-50" target="_blank" style="color:#38bdf8; text-decoration:underline;">groww.in/charts/stocks/nifty-50</a>). Use the <strong>Horizontal Line (Alt + H)</strong> tool on Groww's chart and input these coordinates:</p>
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #f43f5e; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🔴 RESISTANCE R1</div><strong style="color:#f43f5e; font-size:15px;">24,774.30</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('24774.30'); alert('Copied R1: 24774.30')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #10b981; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🟢 SUPPORT S1</div><strong style="color:#10b981; font-size:15px;">22,229.17</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('22229.17'); alert('Copied S1: 22229.17')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🟠 DAY CEILING (HIGH)</div><strong style="color:#f59e0b; font-size:15px;">24,868.48</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('24868.48'); alert('Copied Day Ceiling: 24868.48')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🔵 DAY FLOOR (LOW)</div><strong style="color:#06b6d4; font-size:15px;">24,227.72</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('24227.72'); alert('Copied Day Floor: 24227.72')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #ec4899; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🟣 CALL WALL (CEILING)</div><strong style="color:#ec4899; font-size:15px;">24,800.00</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('24800.00'); alert('Copied Call Wall: 24800.00')">Copy</button>
+        </div>
+        <div style="background:#0f172a; padding:10px 14px; border-radius:8px; border-left:4px solid #10b981; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:11px; color:#94a3b8;">🟢 PUT FLOOR (BASE)</div><strong style="color:#10b981; font-size:15px;">24,400.00</strong></div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="navigator.clipboard.writeText('24400.00'); alert('Copied Put Floor: 24400.00')">Copy</button>
+        </div>
+      </div>
+
+      <div style="background:#0f172a; padding:10px; border-radius:6px; font-size:11px; color:#94a3b8; margin-bottom:16px;">
+        💡 <strong>Groww Pro Tip:</strong> Press <kbd style="background:#334155; padding:2px 5px; border-radius:3px; color:#fff;">Alt + H</kbd> anywhere on Groww's chart to quickly drop a horizontal line, double-click the line, and paste the coordinate value!
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="btn" onclick="copyGrowwSummary()">📋 Copy All Levels</button>
+        <div style="display:flex; gap:10px;">
+          <a href="https://groww.in/charts/stocks/nifty-50" target="_blank" class="btn" style="background:#00d09c; color:#0f172a; font-weight:700;">🚀 Open Groww Chart</a>
+          <button class="btn btn-primary" onclick="closeGrowwModal()">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -455,12 +511,47 @@ plot(ta.ema(close, 200), "EMA 200", color=color.purple, linewidth=2)
       document.getElementById('pine-modal').style.display = 'none';
     }
 
+    function openGrowwModal() {
+      document.getElementById('groww-modal').style.display = 'flex';
+    }
+
+    function closeGrowwModal() {
+      document.getElementById('groww-modal').style.display = 'none';
+    }
+
+    function copyGrowwSummary() {
+      const summary = `GROWW NIFTY 50 CHART LEVELS (2026-11-05):\n• Resistance R1: 24774.30\n• Day Ceiling: 24868.48\n• Call Wall: 24800.00\n• Put Floor: 24400.00\n• Day Floor: 24227.72\n• Support S1: 22229.17`;
+      navigator.clipboard.writeText(summary).then(() => {
+        alert('All Groww levels copied to clipboard!');
+      });
+    }
+
     function copyPineScript() {
       const code = document.getElementById('pine-code').innerText;
       navigator.clipboard.writeText(code).then(() => {
         alert('Pine Script copied to clipboard! Paste it into TradingView Pine Editor.');
       });
     }
+
+    let refreshCountdown = 15;
+    let autoRefreshActive = true;
+    function updateRefresh() {
+      if (!autoRefreshActive) return;
+      const el = document.getElementById('refresh-timer');
+      if (el) el.innerText = refreshCountdown + 's';
+      refreshCountdown--;
+      if (refreshCountdown <= 0) {
+        window.location.reload();
+      }
+    }
+    function toggleAutoRefresh() {
+      autoRefreshActive = !autoRefreshActive;
+      const btn = document.getElementById('btn-toggle-refresh');
+      if (btn) {
+        btn.innerHTML = autoRefreshActive ? '🔄 Auto-Refresh: <span id="refresh-timer">15s</span>' : '⏸ Auto-Refresh: OFF';
+      }
+    }
+    setInterval(updateRefresh, 1000);
   </script>
 </body>
 </html>

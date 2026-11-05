@@ -503,7 +503,9 @@ def main():
         else:
             print_dashboard(forecast)
 
-        if args.chart or args.web or args.groww:
+        # Option 1 (Built-in Interactive Web Chart) is the default unless explicitly suppressed
+        should_open_chart = not args.no_chart and not args.json
+        if should_open_chart:
             from src.chart_app import launch_chart_application
             launch_chart_application(forecast=forecast, open_browser=True)
 
