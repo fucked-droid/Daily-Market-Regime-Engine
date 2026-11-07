@@ -1,0 +1,135 @@
+{
+  "as_of_date": "2026-11-05",
+  "nifty_close": 24548.10,
+  "nifty_change_pct": 2.45,
+  "sectors": [
+    {
+      "name": "NIFTY BANK",
+      "ticker": "^NSEBANK",
+      "weight_pct": 33.5,
+      "change_pct": 2.85,
+      "category": "CYCLICAL_FINANCIAL"
+    },
+    {
+      "name": "NIFTY IT",
+      "ticker": "^CNXIT",
+      "weight_pct": 13.8,
+      "change_pct": 1.20,
+      "category": "GROWTH_TECH"
+    },
+    {
+      "name": "NIFTY OIL & GAS",
+      "ticker": "^CNXENERGY",
+      "weight_pct": 11.4,
+      "change_pct": 2.10,
+      "category": "ENERGY_COMMODITY"
+    },
+    {
+      "name": "NIFTY AUTO",
+      "ticker": "^CNXAUTO",
+      "weight_pct": 7.2,
+      "change_pct": 3.10,
+      "category": "CYCLICAL_CONSUMER"
+    },
+    {
+      "name": "NIFTY FMCG",
+      "ticker": "^CNXFMCG",
+      "weight_pct": 8.1,
+      "change_pct": 0.45,
+      "category": "DEFENSIVE"
+    },
+    {
+      "name": "NIFTY METAL",
+      "ticker": "^CNXMETAL",
+      "weight_pct": 3.8,
+      "change_pct": 3.60,
+      "category": "CYCLICAL_HIGH_BETA"
+    },
+    {
+      "name": "NIFTY PHARMA",
+      "ticker": "^CNXPHARMA",
+      "weight_pct": 4.2,
+      "change_pct": 0.30,
+      "category": "DEFENSIVE"
+    },
+    {
+      "name": "NIFTY FIN SERVICE",
+      "ticker": "^CNXFIN",
+      "weight_pct": 10.0,
+      "change_pct": 2.60,
+      "category": "CYCLICAL_FINANCIAL"
+    }
+  ],
+  "top_heavyweights": [
+    {
+      "symbol": "HDFCBANK.NS",
+      "name": "HDFC Bank",
+      "sector": "NIFTY BANK",
+      "weight_pct": 11.5,
+      "change_pct": 2.90
+    },
+    {
+      "symbol": "RELIANCE.NS",
+      "name": "Reliance Ind",
+      "sector": "NIFTY OIL & GAS",
+      "weight_pct": 9.8,
+      "change_pct": 2.25
+    },
+    {
+      "symbol": "ICICIBANK.NS",
+      "name": "ICICI Bank",
+      "sector": "NIFTY BANK",
+      "weight_pct": 8.1,
+      "change_pct": 3.15
+    },
+    {
+      "symbol": "INFY.NS",
+      "name": "Infosys",
+      "sector": "NIFTY IT",
+      "weight_pct": 5.9,
+      "change_pct": 1.40
+    },
+    {
+      "symbol": "LT.NS",
+      "name": "Larsen & Toubro",
+      "sector": "INFRA_CAPGOODS",
+      "weight_pct": 4.2,
+      "change_pct": 3.40
+    },
+    {
+      "symbol": "TCS.NS",
+      "name": "TCS",
+      "sector": "NIFTY IT",
+      "weight_pct": 4.1,
+      "change_pct": 0.95
+    },
+    {
+      "symbol": "BHARTIARTL.NS",
+      "name": "Bharti Airtel",
+      "sector": "TELECOM",
+      "weight_pct": 4.0,
+      "change_pct": 1.80
+    },
+    {
+      "symbol": "ITC.NS",
+      "name": "ITC",
+      "sector": "NIFTY FMCG",
+      "weight_pct": 3.8,
+      "change_pct": 0.60
+    },
+    {
+      "symbol": "AXISBANK.NS",
+      "name": "Axis Bank",
+      "sector": "NIFTY BANK",
+      "weight_pct": 3.4,
+      "change_pct": 2.50
+    },
+    {
+      "symbol": "KOTAKBANK.NS",
+      "name": "Kotak Mahindra Bank",
+      "sector": "NIFTY BANK",
+      "weight_pct": 2.8,
+      "change_pct": 2.10
+    }
+  ]
+}

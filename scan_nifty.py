@@ -63,6 +63,16 @@ from src.global_cues import (
     load_cached_global_cues,
     GlobalCuesAnalyzer,
 )
+from src.order_flow import (
+    fetch_order_flow_data,
+    load_cached_order_flow,
+    OrderFlowAnalyzer,
+)
+from src.sectoral_rotation import (
+    fetch_sectoral_data,
+    load_cached_sectoral,
+    SectoralRotationAnalyzer,
+)
 
 
 def scan_and_predict(
@@ -208,8 +218,26 @@ def scan_and_predict(
     except Exception:
         global_cues_data = None
 
-    # 11. Directional Movement Bias
-    # Synthesize Trend Score + Momentum + S/R + Options + Institutional Flows + Breadth + Global Cues
+    # 11. Intraday Order Flow & Cumulative Volume Delta (CVD)
+    order_flow_data = None
+    try:
+        of_raw = fetch_order_flow_data() if update_data else load_cached_order_flow()
+        of_analyzer = OrderFlowAnalyzer(of_raw)
+        order_flow_data = of_analyzer.compute_order_flow_score()
+    except Exception:
+        order_flow_data = None
+
+    # 12. Sectoral Rotation & Heavyweight Heatmap
+    sectoral_data = None
+    try:
+        sec_raw = fetch_sectoral_data() if update_data else load_cached_sectoral()
+        sec_analyzer = SectoralRotationAnalyzer(sec_raw)
+        sectoral_data = sec_analyzer.compute_sectoral_score()
+    except Exception:
+        sectoral_data = None
+
+    # 13. Directional Movement Bias
+    # Synthesize Trend + Momentum + S/R + Options + FII/DII + Breadth + Global + Order Flow + Sectors
     bias_points = 0
     if trend_score >= 2:
         bias_points += 2
@@ -255,12 +283,26 @@ def scan_and_predict(
         elif "BEARISH" in gv or "NEGATIVE" in gv:
             bias_points -= 1
 
+    if order_flow_data:
+        ov = order_flow_data.get("verdict", "")
+        if "BULLISH" in ov:
+            bias_points += 1
+        elif "BEARISH" in ov:
+            bias_points -= 1
+
+    if sectoral_data:
+        sv = sectoral_data.get("verdict", "")
+        if "BULLISH" in sv:
+            bias_points += 1
+        elif "BEARISH" in sv:
+            bias_points -= 1
+
     if bias_points >= 3:
         trading_bias = "BULLISH (Upward Momentum Favored)"
-        conviction = "High" if bias_points >= 5 else "Moderate"
+        conviction = "High" if bias_points >= 6 else "Moderate"
     elif bias_points <= -3:
         trading_bias = "BEARISH (Downward Momentum Favored)"
-        conviction = "High" if bias_points <= -5 else "Moderate"
+        conviction = "High" if bias_points <= -6 else "Moderate"
     else:
         trading_bias = "NEUTRAL / RANGEBOUND (Consolidation Favored)"
         conviction = "Moderate"
@@ -330,6 +372,8 @@ def scan_and_predict(
         "institutional_data": institutional_data,
         "breadth_data": breadth_data,
         "global_cues_data": global_cues_data,
+        "order_flow_data": order_flow_data,
+        "sectoral_data": sectoral_data,
         "news": news_items,
     }
 
@@ -432,7 +476,37 @@ def print_dashboard(forecast: dict):
         print(f"    - Macro Commodities: {macro.get('crude_desc')}")
         print(f"    - Opening Playbook : {gap.get('playbook')}")
 
-    print("\n 9. TRADER'S CHART SETUP & ACTION GUIDE (SIMPLE HINGLISH):")
+    of = forecast.get("order_flow_data")
+    if of:
+        ds = of.get("delta_summary", {})
+        div = of.get("divergence_summary", {})
+        dp = of.get("depth_summary", {})
+        print("\n 9. INTRADAY ORDER FLOW & CUMULATIVE VOLUME DELTA (CVD):")
+        print(f"    - Cumulative Delta : {ds.get('cumulative_volume_delta', 0):+,d} contracts (Buyers: {ds.get('buyer_ratio_pct', 50)}% vs Sellers: {ds.get('seller_ratio_pct', 50)}%)")
+        print(f"    - Flow Divergence  : {div.get('status')} [{div.get('divergence_signal')}]")
+        print(f"    - Order Book Depth : Bid/Ask Ratio = {dp.get('bid_ask_imbalance_ratio', 1.0):.2f} [{dp.get('status')}]")
+        print(f"    - Order Flow Score : {of.get('score', 0):+.2f} / 2.00 [{of.get('verdict')}] ({of.get('regime')})")
+        print(f"    - Intraday Tape    : {of.get('commentary')}")
+
+    sec = forecast.get("sectoral_data")
+    if sec:
+        s_det = sec.get("sector_details", {})
+        hw_det = sec.get("heavyweight_details", {})
+        top_driver = s_det.get("top_driver", {})
+        top_drag = s_det.get("top_drag", {})
+        top_bull = hw_det.get("top_bull_stock", {})
+        print("\n10. SECTORAL ROTATION & HEAVYWEIGHT HEATMAP:")
+        print(f"    - Rotation Dynamic : {sec.get('rotation_regime')} [{sec.get('rotation_signal')}]")
+        driver_txt = f"{top_driver.get('name')} (+{top_driver.get('change_pct', 0)}% -> {top_driver.get('points_contribution', 0):+,.1f} pts)" if top_driver else "None"
+        drag_txt = f"{top_drag.get('name')} ({top_drag.get('change_pct', 0)}% -> {top_drag.get('points_contribution', 0):+,.1f} pts)" if top_drag else "None"
+        bull_txt = f"{top_bull.get('name')} ({top_bull.get('points_contribution', 0):+,.1f} pts)" if top_bull else "None"
+        print(f"    - Top Sector Driver: {driver_txt}")
+        print(f"    - Top Sector Drag  : {drag_txt}")
+        print(f"    - Lead Heavyweight : {bull_txt}")
+        print(f"    - Net Sector Points: {s_det.get('total_sector_points', 0):+,.1f} NIFTY index points")
+        print(f"    - Sector Score     : {sec.get('score', 0):+.2f} / 2.00 [{sec.get('verdict')}]")
+
+    print("\n11. TRADER'S CHART SETUP & ACTION GUIDE (SIMPLE HINGLISH):")
     print("    [CHART PAR KYA LINES DRAW KARNI HAIN]:")
     if nr:
         print(f"    - LAAL LINE (Resistance R1) : {nr['price']:,.0f} par mark karein (Zone: {nr['range'][0]:,.0f} se {nr['range'][1]:,.0f})")
@@ -482,6 +556,7 @@ def main():
     parser.add_argument("--chart", "-c", action="store_true", help="Generate and directly open interactive TradingView chart with levels marked in default browser.")
     parser.add_argument("--web", "-w", action="store_true", help="Redirect and launch interactive chart application in browser.")
     parser.add_argument("--groww", "-g", action="store_true", help="Open Groww live Nifty 50 chart alongside the engine chart.")
+    parser.add_argument("--telegram", "-t", action="store_true", help="Forward 30-second live updates and breakout alerts to your Telegram bot.")
     parser.add_argument("--no-chart", action="store_true", help="Do not open browser chart in live scanning mode.")
 
     args = parser.parse_args()
@@ -494,7 +569,11 @@ def main():
 
         if args.live:
             from src.live_scanner import run_live_market_loop
-            run_live_market_loop(interval=args.interval, launch_chart=not args.no_chart)
+            run_live_market_loop(
+                interval=args.interval,
+                launch_chart=not args.no_chart,
+                send_telegram=args.telegram,
+            )
             return 0
 
         forecast = scan_and_predict(update_data=args.update, include_news=args.news)
@@ -502,6 +581,20 @@ def main():
             print(json.dumps(forecast, indent=2))
         else:
             print_dashboard(forecast)
+
+        if args.telegram:
+            from src.telegram_bot import format_telegram_compact_update, send_telegram_message
+            live_tick = {
+                "price": forecast["nifty_close"],
+                "change_points": forecast["daily_change_points"],
+                "change_pct": forecast["daily_change_pct"],
+            }
+            msg = format_telegram_compact_update(live_tick, forecast, iteration=1)
+            msg_id = send_telegram_message(msg)
+            if msg_id:
+                print(f"[TELEGRAM] Scan successfully forwarded to Telegram (Message ID: {msg_id})", file=sys.stderr)
+            else:
+                print("[TELEGRAM] Note: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured.", file=sys.stderr)
 
         # Option 1 (Built-in Interactive Web Chart) is the default unless explicitly suppressed
         should_open_chart = not args.no_chart and not args.json

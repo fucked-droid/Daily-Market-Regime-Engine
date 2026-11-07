@@ -1,0 +1,122 @@
+{
+  "as_of_date": "2026-11-05",
+  "symbol": "NIFTY",
+  "spot_price": 24548.10,
+  "session_stats": {
+    "total_volume": 12850000,
+    "buy_volume": 7710000,
+    "sell_volume": 5140000,
+    "cumulative_volume_delta": 2570000,
+    "buyer_ratio_pct": 60.0,
+    "seller_ratio_pct": 40.0,
+    "large_lot_trades_count": 482,
+    "institutional_aggression": "BULLISH_AGGRESSIVE_BUYING"
+  },
+  "order_book_depth": {
+    "total_bid_quantity": 4820000,
+    "total_ask_quantity": 3210000,
+    "bid_ask_imbalance_ratio": 1.50,
+    "imbalance_status": "STRONG_BUY_SIDE_LIQUIDITY"
+  },
+  "intraday_bars_15m": [
+    {
+      "time": "09:15",
+      "open": 24320.0,
+      "high": 24380.0,
+      "low": 24310.0,
+      "close": 24365.0,
+      "buy_volume": 850000,
+      "sell_volume": 420000,
+      "delta": 430000,
+      "cumulative_delta": 430000
+    },
+    {
+      "time": "09:30",
+      "open": 24365.0,
+      "high": 24420.0,
+      "low": 24350.0,
+      "close": 24410.0,
+      "buy_volume": 920000,
+      "sell_volume": 480000,
+      "delta": 440000,
+      "cumulative_delta": 870000
+    },
+    {
+      "time": "09:45",
+      "open": 24410.0,
+      "high": 24440.0,
+      "low": 24390.0,
+      "close": 24425.0,
+      "buy_volume": 710000,
+      "sell_volume": 510000,
+      "delta": 200000,
+      "cumulative_delta": 1070000
+    },
+    {
+      "time": "10:00",
+      "open": 24425.0,
+      "high": 24460.0,
+      "low": 24415.0,
+      "close": 24450.0,
+      "buy_volume": 680000,
+      "sell_volume": 490000,
+      "delta": 190000,
+      "cumulative_delta": 1260000
+    },
+    {
+      "time": "10:15",
+      "open": 24450.0,
+      "high": 24480.0,
+      "low": 24430.0,
+      "close": 24470.0,
+      "buy_volume": 740000,
+      "sell_volume": 530000,
+      "delta": 210000,
+      "cumulative_delta": 1470000
+    },
+    {
+      "time": "10:30",
+      "open": 24470.0,
+      "high": 24510.0,
+      "low": 24460.0,
+      "close": 24505.0,
+      "buy_volume": 810000,
+      "sell_volume": 460000,
+      "delta": 350000,
+      "cumulative_delta": 1820000
+    },
+    {
+      "time": "10:45",
+      "open": 24505.0,
+      "high": 24530.0,
+      "low": 24485.0,
+      "close": 24515.0,
+      "buy_volume": 620000,
+      "sell_volume": 480000,
+      "delta": 140000,
+      "cumulative_delta": 1960000
+    },
+    {
+      "time": "11:00",
+      "open": 24515.0,
+      "high": 24545.0,
+      "low": 24500.0,
+      "close": 24535.0,
+      "buy_volume": 690000,
+      "sell_volume": 450000,
+      "delta": 240000,
+      "cumulative_delta": 2200000
+    },
+    {
+      "time": "11:15",
+      "open": 24535.0,
+      "high": 24560.0,
+      "low": 24520.0,
+      "close": 24548.10,
+      "buy_volume": 780000,
+      "sell_volume": 410000,
+      "delta": 370000,
+      "cumulative_delta": 2570000
+    }
+  ]
+}
