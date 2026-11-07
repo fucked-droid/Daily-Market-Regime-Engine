@@ -155,7 +155,10 @@ def format_telegram_compact_update(
     alerts: Optional[List[Dict[str, str]]] = None,
     iteration: int = 1,
 ) -> str:
-    """Format a clean, mobile-friendly Telegram Markdown message."""
+    """
+    Format a high-conviction, professional trader mindset Telegram update.
+    Emulates the real-time inner monologue and tactical thinking of an institutional trader.
+    """
     now_str = datetime.now(IST).strftime("%H:%M:%S IST")
     price = live_nifty.get("price", 0.0)
     chg_pts = live_nifty.get("change_points", 0.0)
@@ -172,25 +175,77 @@ def format_telegram_compact_update(
     opt = forecast.get("option_data") or {}
     call_wall = opt.get("major_call_wall") or 24800
     put_floor = opt.get("major_put_floor") or 24400
+    pcr = opt.get("pcr_oi", 0.91)
 
     bias = forecast.get("trading_bias", "NEUTRAL")
+    conviction = forecast.get("conviction", "Moderate")
+    regime = forecast.get("current_regime", "Normal")
     trend_emoji = "🟢" if "BULLISH" in bias else ("🔴" if "BEARISH" in bias else "🟡")
 
+    # Smart money & internal market signals
+    inst = forecast.get("institutional_data") or {}
+    cs = inst.get("cash_summary", {})
+    ds = inst.get("derivatives_summary", {})
+    fii_net = cs.get("fii_net_crores", 0.0)
+    long_ratio = ds.get("long_ratio_pct", 50.0)
+
+    of = forecast.get("order_flow_data") or {}
+    of_delta = of.get("delta_summary", {}).get("cumulative_volume_delta", 0)
+    of_div = of.get("divergence_summary", {}).get("status", "NORMAL_FLOW")
+
+    breadth = forecast.get("breadth_data") or {}
+    b_adv = breadth.get("divergence_details", {}).get("advances", 25)
+    b_dec = breadth.get("divergence_details", {}).get("declines", 25)
+
+    sec = forecast.get("sectoral_data") or {}
+    sec_lead = sec.get("sector_details", {}).get("top_driver", {}).get("name", "NIFTY BANK")
+
+    # Trader's tactical inner monologue
+    if r1 and price >= (r1 - 100):
+        read_note = f"⚠️ *Approaching Resistance R1 (`{r1:,.0f}`)*. Do NOT buy the top blindly; wait for clean 15-m candle close."
+        plan_note = (
+            f"1. 🚀 *Breakout Long*: If 15-m candle closes *above `{r1:,.0f}`* with positive delta -> Call (CE) buy. Target: `{ceil_p:,.0f}`. SL: `{price:,.0f}`.\n"
+            f"2. 🔻 *Rejection Short*: If red rejection wick forms at `{r1:,.0f}` -> Put (PE) buy. Target: `{s1 if s1 else price - 150:,.0f}`. SL: `{r1 + 25:,.0f}`."
+        )
+    elif s1 and price <= (s1 + 100):
+        read_note = f"🛡️ *Testing Major Support S1 (`{s1:,.0f}`)*. Looking for buyer absorption & Put writer defense."
+        plan_note = (
+            f"1. 🟢 *Dip-Buy Bounce*: If green hammer forms at `{s1:,.0f}` -> Call (CE) buy. Target: `{price + 120:,.0f}`. SL: `{floor_p:,.0f}`.\n"
+            f"2. ⚠️ *Breakdown Short*: Only if 15-m closes *below `{s1:,.0f}`* -> Target: `{floor_p:,.0f}`."
+        )
+    else:
+        read_note = f"🧭 *Trend Following Mode* (`{regime}`). Riding momentum toward Resistance R1 (`{r1:,.0f}`)."
+        plan_note = (
+            f"1. 🟢 *Trend Hold*: Keep trailing stop-loss under Put Floor `{put_floor:,.0f}` / Support `{s1:,.0f}`.\n"
+            f"2. 🎯 *Upside Target*: Call Wall `{call_wall:,.0f}` & Day Ceiling `{ceil_p:,.0f}`."
+        )
+
     msg = (
-        f"{trend_emoji} *NIFTY 50 LIVE SCANNER* (30s Update)\n"
+        f"{trend_emoji} *NIFTY 50 LIVE SCANNER | PRO TRADER MINDSET*\n"
         f"⏰ `{now_str}` | Scan `#{iteration}`\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📊 *Spot*: `{price:,.2f}` ({pts_sign}{chg_pts:,.1f} | {pct_sign}{chg_pct:.2f}%)\n"
-        f"🧭 *Regime*: `{forecast.get('current_regime', 'Unknown')}`\n"
+        f"🧭 *Regime*: `[{regime}]` | *Conviction*: `{conviction}`\n"
         f"🎯 *Bias*: `{bias.split('(')[0].strip()}`\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"🔴 *Resistance R1*: `{r1:,.0f}` (Ceiling: `{ceil_p:,.0f}`)\n"
-        f"🟢 *Support S1*: `{s1:,.0f}` (Floor: `{floor_p:,.0f}`)\n"
-        f"🧱 *Call Wall*: `{call_wall:,.0f}` | *Put Floor*: `{put_floor:,.0f}`\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📍 *MY TACTICAL READ (Where We Stand)*:\n"
+        f"{read_note}\n"
+        f"• *Resistance R1*: `{r1:,.0f}` (Ceiling: `{ceil_p:,.0f}`)\n"
+        f"• *Support S1*: `{s1:,.0f}` (Floor: `{floor_p:,.0f}`)\n"
+        f"• *Institutional Walls*: Call Wall `{call_wall:,.0f}` | Put Floor `{put_floor:,.0f}`\n\n"
+        f"🔍 *SMART MONEY & INTERNAL HEALTH*:\n"
+        f"• FII Flow: `{fii_net:+,.0f} Cr` | FII Futures: `{long_ratio:.1f}% Long`\n"
+        f"• Order Flow (CVD): `{of_delta:+,d}` delta (`{of_div}`)\n"
+        f"• Breadth & Sector: `{b_adv} Advances / {b_dec} Declines` | Leader: `{sec_lead}`\n"
+        f"• Put-Call Ratio: `PCR {pcr:.2f}`\n\n"
+        f"🎯 *HOW I AM TRADING THIS (Trader's Thinking)*:\n"
+        f"{plan_note}\n\n"
+        f"🛡️ *TRADER'S GOLDEN RULE*:\n"
+        f"_Capital preservation is #1. Never average a loser. Trade the reaction, not prediction._\n"
     )
 
     if alerts:
-        msg += f"━━━━━━━━━━━━━━━━━━\n🚨 *LIVE ALERTS*:\n"
+        msg += f"━━━━━━━━━━━━━━━━━━━━━━━━━\n🚨 *LIVE ALERTS*:\n"
         for a in alerts[:3]:
             msg += f"• `{a.get('level')}`: {a.get('message')}\n"
 
