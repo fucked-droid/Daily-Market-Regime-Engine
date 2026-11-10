@@ -28,6 +28,7 @@ def get_telegram_credentials() -> tuple[Optional[str], Optional[str]]:
         env_paths = [
             os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
             os.path.join(os.path.dirname(__file__), "..", ".env"),
+            "/root/.env",
         ]
         for p in env_paths:
             if os.path.exists(p):
@@ -38,6 +39,25 @@ def get_telegram_credentials() -> tuple[Optional[str], Optional[str]]:
                             token = token or line.split("=", 1)[1].strip().strip('"').strip("'")
                         elif line.startswith("TELEGRAM_CHAT_ID="):
                             chat_id = chat_id or line.split("=", 1)[1].strip().strip('"').strip("'")
+
+    if not token or not chat_id:
+        # Check .telegram_config.json
+        cfg_paths = [
+            os.path.join(os.path.dirname(__file__), "..", ".telegram_config.json"),
+            os.path.join(os.path.expanduser("~"), ".telegram_config.json"),
+            "/root/.telegram_config.json",
+        ]
+        for cp in cfg_paths:
+            if os.path.exists(cp):
+                try:
+                    with open(cp, "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                        token = token or cfg.get("bot_token")
+                        chat_id = chat_id or cfg.get("chat_id")
+                        if token and chat_id:
+                            break
+                except Exception:
+                    pass
 
     return token, chat_id
 

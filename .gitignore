@@ -49,7 +49,34 @@ code-server-*.tar.gz
 *.zip
 *.iso
 
+# --- Local Scripts & Standalone Tools ---
+Scan_nifty.py
+fetch_live_ipos.py
+
 # --- System / OS / Editor Files ---
 .DS_Store
 Thumbs.db
 .vscode/
+
+# --- Local Secrets, State, and Telemetry ---
+.telegram_config.json
+.telegram_*state.json
+*.bak
+*.symlink_bak
+
+# --- Nested Repositories & Submodules ---
+Gemini-agent/
+ipo_sentinel/
+
+# --- Symlinks to external engines ---
+Daily-Market-Regime-Engine
+IPO-Intelligence-Engine
+IPO-intelligence-Engine
+package.json
+run_sentinel.py
+
+# --- Runtime Caches & Dynamic Scans ---
+nifty_live_candles.json
+nifty_momentum_scan_latest.json
+scan_results.json
+

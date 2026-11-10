@@ -196,7 +196,10 @@ def update_master_nifty_dataset(
 
     # 4. Save to parquet and csv
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    combined.to_parquet(MASTER_PARQUET)
+    try:
+        combined.to_parquet(MASTER_PARQUET)
+    except Exception:
+        pass
     combined.to_csv(MASTER_CSV)
 
     return combined, new_count

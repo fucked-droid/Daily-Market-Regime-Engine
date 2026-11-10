@@ -382,6 +382,24 @@ def evaluate_live_alerts(
                 "message": "SECTORAL TUG-OF-WAR: Banking and IT pulling in opposite directions. Rangebound chop favored.",
             })
 
+    # 10. Smart Money Order Block Alerts
+    ob_data = forecast.get("order_blocks") if forecast else None
+    if ob_data:
+        nb = ob_data.get("nearest_bullish")
+        ns_ob = ob_data.get("nearest_bearish")
+        if nb and nb["bottom"] <= price <= nb["top"]:
+            alerts.append({
+                "type": "ORDER_BLOCK_DEMAND",
+                "level": "HIGH",
+                "message": f"TESTING BULLISH ORDER BLOCK: Spot ({price:,.2f}) inside Demand Zone [{nb['bottom']:,.0f} - {nb['top']:,.0f}]. Watch for strong institutional bounce.",
+            })
+        elif ns_ob and ns_ob["bottom"] <= price <= ns_ob["top"]:
+            alerts.append({
+                "type": "ORDER_BLOCK_SUPPLY",
+                "level": "HIGH",
+                "message": f"TESTING BEARISH ORDER BLOCK: Spot ({price:,.2f}) inside Supply Zone [{ns_ob['bottom']:,.0f} - {ns_ob['top']:,.0f}]. Watch for institutional rejection.",
+            })
+
     return alerts
 
 
@@ -565,6 +583,19 @@ def run_live_market_loop(
         except Exception as e:
             print(f"[WARNING] Could not launch browser chart: {e}", flush=True)
 
+    # Initialize Institutional Order Blocks & SMC Regime
+    try:
+        from src.order_block import detect_order_blocks, analyze_smc_regime
+        from src.market_data import fetch_yahoo_chart
+        chart_df = fetch_yahoo_chart("^NSEI", interval="15m", range_str="5d")
+        forecast["chart_df"] = chart_df
+        forecast["order_blocks"] = detect_order_blocks(chart_df)
+        forecast["smc"] = analyze_smc_regime(df_intraday=chart_df, forecast=forecast)
+    except Exception:
+        forecast["chart_df"] = None
+        forecast["order_blocks"] = None
+        forecast["smc"] = None
+
     iteration = 1
     last_slow_data_time = 0.0
     slow_data_interval = 300.0  # Refresh option chain & macro data every 5 mins
@@ -682,6 +713,16 @@ def run_live_market_loop(
                     sectoral_analysis=sectoral_analysis,
                     iteration=iteration,
                 )
+                try:
+                    from src.order_block import analyze_smc_regime
+                    forecast["smc"] = analyze_smc_regime(
+                        df_intraday=forecast.get("chart_df"),
+                        live_nifty=live_nifty,
+                        live_vix=live_vix,
+                        forecast=forecast,
+                    )
+                except Exception:
+                    pass
 
                 # Optional Telegram Forwarding
                 if send_telegram:
@@ -714,10 +755,52 @@ def run_live_market_loop(
                                 send_telegram_message(alert_text)
                     except Exception as t_err:
                         print(f"[TELEGRAM ERROR] {t_err}", file=sys.stderr)
+
+                try:
+                    from src.telegram_alerts import (
+                        format_live_widget_card,
+                        update_or_send_live_widget,
+                        format_lockscreen_alert,
+                        send_discrete_alert,
+                    )
+                    # 1. Update the silent Smart Live Widget in-place (no notification noise)
+                    widget_msg = format_live_widget_card(
+                        live_nifty=live_nifty,
+                        live_vix=live_vix,
+                        heavyweights=heavyweights,
+                        forecast=forecast,
+                        alerts=alerts,
+                        iteration=iteration,
+                    )
+                    widget_id = update_or_send_live_widget(widget_msg, pin=True)
+                    if widget_id:
+                        print(f"[{datetime.now(IST).strftime('%H:%M:%S')}] 📲 [TELEGRAM] Live Widget #{iteration} updated in-place (ID: {widget_id}).")
+
+                    # 2. Check for high-priority discrete triggers (audible sound pings with lockscreen info)
+                    for a in alerts:
+                        a_type = a.get("type")
+                        if a_type in ("BREAKOUT", "BREAKDOWN", "ORDER_BLOCK_DEMAND", "ORDER_BLOCK_SUPPLY", "VIX_SPIKE", "OUTLIER_MOVE", "MOMENTUM"):
+                            alert_key, alert_text = format_lockscreen_alert(a, live_nifty, forecast)
+                            sent_ping = send_discrete_alert(alert_key, alert_text, cooldown_seconds=300)
+                            if sent_ping:
+                                print(f"[{datetime.now(IST).strftime('%H:%M:%S')}] 🚨 [TELEGRAM SOUND PING] Sent {alert_key} notification.")
+                except Exception as tg_err:
+                    pass
             else:
                 print(f"[{datetime.now(IST).strftime('%H:%M:%S')}] Live tick fetch failed; retrying in {interval}s...", flush=True)
 
             iteration += 1
+            if iteration % 10 == 0:
+                try:
+                    from src.order_block import detect_order_blocks, analyze_smc_regime
+                    from src.market_data import fetch_yahoo_chart
+                    chart_df = fetch_yahoo_chart("^NSEI", interval="15m", range_str="5d")
+                    forecast["chart_df"] = chart_df
+                    forecast["order_blocks"] = detect_order_blocks(chart_df)
+                    forecast["smc"] = analyze_smc_regime(df_intraday=chart_df, live_nifty=live_nifty, live_vix=live_vix, forecast=forecast)
+                except Exception:
+                    pass
+
             if max_iterations and iteration > max_iterations:
                 break
 
@@ -725,3 +808,12 @@ def run_live_market_loop(
 
     except KeyboardInterrupt:
         print("\n\nLive Market Scanner stopped by user.", flush=True)
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="NIFTY Live Market Scanner & Telegram SMC Widget")
+    parser.add_argument("--interval", "-i", type=int, default=30, help="Refresh interval in seconds (default: 30)")
+    parser.add_argument("--max-iterations", "-m", type=int, default=None, help="Max iterations before exiting")
+    cli_args = parser.parse_args()
+    run_live_market_loop(interval=cli_args.interval, max_iterations=cli_args.max_iterations)

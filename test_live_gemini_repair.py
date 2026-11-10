@@ -8,7 +8,8 @@ from live_repair import live_gemini_diagnose_and_patch, PROTECTED_FILES
 
 class TestLiveGeminiRepairSecurityAndParsing(unittest.TestCase):
     def test_project_root_containment(self):
-        outside_path = Path("C:/Windows/System32/calc.py")
+        import os
+        outside_path = Path("C:/Windows/System32/calc.py") if os.name == "nt" else Path("/etc/outside_calc.py")
         res = live_gemini_diagnose_and_patch(outside_path, "SyntaxError", "error")
         self.assertFalse(res["patched"])
         self.assertIn("outside project root", res["error"])
